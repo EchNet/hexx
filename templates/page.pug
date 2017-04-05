@@ -1,0 +1,28 @@
+html
+  head
+    meta(charset="utf-8")
+    link(rel="stylesheet", type="text/css", href=stylesheet)
+    title= title
+    script.
+      var require = {
+        baseUrl: "/js",
+        paths: {
+          "jquery": "lib/jquery-3.1.1.slim.min"
+        },
+        map: {
+          "*": { "jquery": "jquery-private" }, 
+          "jquery-private": { "jquery": "jquery" } 
+        },
+        deps: [ "#{mainModule}" ], 
+        callback: function(App) { new App().open(); } 
+      }
+    script(src="/js/lib/require.js")
+  body
+    div(id="content")
+      div(id="startup")
+        div(class="logo")
+        div(class="under")
+          noscript.
+            To use Living Connections, you must enable Javascript in your browser.
+      div(id="login")
+      div(id="app")

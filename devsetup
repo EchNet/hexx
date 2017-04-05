@@ -1,0 +1,34 @@
+export HEXX_HOME=$PWD
+export PGPASSWORD=postgres
+export NODE_ENV=development
+
+alias sequelize="./node_modules/.bin/sequelize"
+alias mocha="./node_modules/.bin/mocha"
+alias db="/usr/local/bin/psql -U postgres -d livconn"
+alias lock-versions="./node_modules/.bin/lock-versions"
+alias server="node server"
+alias testserver="NODE_ENV=test node server"
+
+openTab()
+{
+  osascript -e 'activate application "iTerm"'
+  osascript -e 'tell application "System Events" to keystroke "t" using command down'
+}
+
+runCommand()
+{
+  osascript -e "tell application \"iTerm\" to tell session -1 of current terminal to write text \"${1}\""
+}
+
+term()
+{
+  openTab
+  runCommand "cd $HEXX_HOME"
+}
+
+echo "Project Hexx"
+echo "--------------------------"
+echo "server        Run the server"
+echo "testserver    Run the server in test mode"
+echo "db            Connect to the local database"
+echo "term          Open a new terminal window"

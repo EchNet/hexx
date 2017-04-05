@@ -1,0 +1,33 @@
+{
+  "name": "hexx",
+  "author": {
+    "name": "James Echmalian"
+  },
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "body-parser": "1.16.0",
+    "cookie-parser": "1.4.3",
+    "express": "4.14.1",
+    "extend": "3.0.0",
+    "grunt": "0.4.5",
+    "pg": "4.5.6",
+    "promise": "7.1.1",
+    "pug": "2.0.0-beta6",
+    "sequelize": "3.30.2",
+    "sequelize-cli": "2.5.1",
+    "tmp": "0.0.31"
+  },
+  "devDependencies": {
+    "chai": "3.5.0",
+    "grunt-blanket-mocha": "0.4.1",
+    "mocha": "2.5.3",
+    "timekeeper": "^1.0.0"
+  },
+  "engines": {
+    "node": "5.2.0"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --reporter spec"
+  }
+}
