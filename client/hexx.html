@@ -1,23 +1,98 @@
 <html>
 <head>
-<title>Hex</title>
+<title>Hex Drag and Drop</title>
 <style>
-canvas {
-	background: #eee;
-	border: 1px #ccc solid;
+canvas.palette {
+	cursor: pointer;
+	margin: 10px;
+}
+div.canvas {
+	position: relative;
+	margin: 40px;
+}
+div.canvas > canvas {
+	position: absolute;
+	top: 0px;
+}
+canvas.drawing {
+	border: solid 1px #ddd;
+	background-color: #eee;
 }
 </style>
 </head>
 <body>
-<canvas id="canvas1" width="400" height="400"></canvas>
+<div id="palette"></div>
+<div id="canvas" class="canvas">
+	<canvas id="drawing-canvas" class="drawing" width="800" height="300"></canvas>
+	<canvas id="overlay-canvas" class="overlay" width="800" height="300"></canvas>
+</div>
 </body>
 <script src="js/lib/jquery-3.1.1.slim.min.js"></script>
 <script>
 
-	function withCanvas(id, func) {
-		var canvas = document.getElementById(id);
+	var config = {
+		palette: {
+			elementRadius: 40
+		},
+		canvas: {
+			width: 800,
+			height: 300, 
+			elementRadius: 40,
+			lineStyle: "rgba(150,150,150,0.5)",
+			lineWidth: 2
+		}
+	};
+
+	var data = {
+		palette: {
+			id: 0,
+			name: "palette0",
+			contents: [
+				{
+					id: 1,
+					name: "who?",
+					image: {
+						url: "img/usr-cre.png"
+					}
+				},
+				{
+					id: 2,
+					name: "red",
+					fill: "rgba(255,0,0,1)"
+				},
+				{
+					id: 3,
+					name: "blue",
+					fill: "rgba(0,0,255,1)"
+				},
+				{
+					id: 4,
+					name: "yellow",
+					fill: "rgba(240,240,0,1)"
+				}
+			]
+		},
+		canvas: {
+			id: 47,
+			name: "rich",
+			contents: []
+		}
+	};
+
+	function withElement(id, func) {
+		var ele = document.getElementById(id);
+		return func(ele);
+	}
+
+	function withContext(canvas, func) {
 		var context = canvas.getContext("2d");
-		func(context, canvas);
+		return func(context, canvas);
+	}
+
+	function forEach(array, func) {
+		for (var i in array) {
+			func(array[i], i);
+		}
 	}
 
 	function traceRegularHexagon(context, x, y, radius, angle) {
@@ -80,49 +155,227 @@ canvas {
 		return promise;
 	}
 
-	setTimeout(function() {
-		withCanvas("canvas1", function(context) {
-			drawRegularHexagon(context);
-			drawRegularHexagon(context, {
-				radius: 30,
-				x: 350,
-				y: 75,
-				angle: 10,
-				fillStyle: "rgba(0,0,200,1)",
-				strokeStyle: "rgba(255,0,0,1)"
-			});
-			drawRegularHexagon(context, {
-				radius: 50,
-				x: 300,
-				y: 75,
-				angle: 2,
-				strokeStyle: "rgba(55,255,0,1)"
-			});
-			drawRegularHexagon(context, {
-				radius: 60,
-				x: 280,
-				y: 75,
-				angle: 10,
-				fillStyle: "rgba(55,0,155,1)"
-			});
-			loadImage("img/usr-cre.png").then(function(img) {
+	function clearCanvas(canvas) {
+		withContext(canvas, function(context) {
+			context.clearRect(0, 0, canvas.width, canvas.height);
+		});
+	}
+
+	function round(n) {
+		return Math.floor(n + 0.5);
+	}
+
+	function closestHex(e) {
+		var radius = config.canvas.elementRadius;
+		var canvasWidth = config.canvas.width;
+		var canvasHeight = config.canvas.height;
+		var rowOffset = radius * Math.sqrt(3);
+		var columnOffset = radius * Math.sqrt(2);
+
+		var x = e.offsetX;
+		var y = e.offsetY;
+
+		var best = {};
+
+		var centerX = -rowOffset;
+		for (var col = -1; centerX < canvasWidth + columnOffset; ++col) {
+			var centerY = (col % 2) * rowOffset/2;
+			while (centerY < canvasHeight + rowOffset) {
+				var dsq = (centerX-x)*(centerX-x) + (centerY-y)*(centerY-y);
+				if (best.dsq == null || dsq < best.dsq) {
+					best.dsq = dsq;
+					best.centerX = centerX;
+					best.centerY = centerY;
+				}
+				centerY += rowOffset;
+			}
+			centerX += columnOffset;
+		}
+
+		if (best.centerX != null && best.centerX >= 0 && best.centerX < canvasWidth &&
+			best.centerY >= 0 && best.centerY < canvasHeight) {
+			return {
+				x: best.centerX, y: best.centerY
+			}
+		}
+	}
+
+	function showFeedback(canvas, e) {
+		clearCanvas(canvas);
+		var center = closestHex(e);
+		if (center) {
+			withContext(canvas, function(context) {
 				drawRegularHexagon(context, {
-					x: 230,
-					y: 250,
-					image: img
+					radius: config.canvas.elementRadius,
+					x: center.x,
+					y: center.y,
+					lineWidth: config.canvas.lineWidth,
+					strokeStyle: config.canvas.lineStyle
 				});
-				drawRegularHexagon(context, {
-					radius: 50,
-					x: 180,
-					y: 275,
-					angle: 2,
-					image: img,
-					strokeStyle: "rgba(55,255,0,1)",
-					lineWidth: 3
-				});
+			});
+			return center;
+		}
+	}
+
+	function handleDragStart(e) {
+	  this.style.opacity = "0.4";
+		e.dataTransfer.effectAllowed = "copy";
+		e.dataTransfer.setData("text/plain", this.dataset.paletteIndex);
+	}
+
+	function handleDragOver(e) {
+		e.preventDefault && e.preventDefault();
+		if (showFeedback(this, e)) {
+			e.dataTransfer.dropEffect = "copy";
+		}
+		return false;
+	}
+
+	function handleDragEnter(e) {
+		showFeedback(this, e);
+	}
+
+	function handleDragLeave(e) {
+		clearCanvas(this);
+	}
+
+	function handleDragEnd(e) {
+	  this.style.opacity = "1";
+	}
+
+	function getDraggedPaletteEntry(e) {
+		var pIndex = e.dataTransfer.getData("text/plain");
+		var pEntry = data.palette.contents[pIndex];
+		return pEntry;
+	}
+
+	function addToCanvas(pEntry, center) {
+		var options = {
+			radius: config.canvas.elementRadius,
+			x: center.x,
+			y: center.y,
+			fillStyle: pEntry.fill,
+			lineWidth: config.canvas.lineWidth,
+			strokeStyle: config.canvas.lineStyle
+		}
+		if (pEntry.image) {
+			if (pEntry.image.obj) {
+				options.image = pEntry.image.obj;
+			}
+			else {
+				options.fillStyle = "rgba(0,0,0,1)";
+			}
+		}
+		data.canvas.contents.push(options);
+		return data.canvas.contents.length - 1;
+	}
+
+	function drawCanvasEntry(cIndex) {
+		var cEntry = data.canvas.contents[cIndex];
+		withElement("drawing-canvas", function(canvas) {
+			withContext(canvas, function(context) {
+				drawRegularHexagon(context, cEntry);
 			});
 		});
-	}, 500);
+	}
+
+	function handleDrop(e) {
+		e.stopPropagation && e.stopPropagation();
+		clearCanvas(this);
+		var center = closestHex(e);
+		if (center) {
+			var cIndex = addToCanvas(getDraggedPaletteEntry(e), center);
+			drawCanvasEntry(cIndex);
+		}
+		return false;
+	}
+
+	function initCanvas() {
+		return $.Deferred().resolve();
+	}
+
+	function enableCanvas() {
+		withElement("overlay-canvas", function(canvas) {
+			canvas.addEventListener("dragenter", handleDragEnter, false);
+			canvas.addEventListener("dragover", handleDragOver, false);
+			canvas.addEventListener("dragleave", handleDragLeave, false);
+			canvas.addEventListener("drop", handleDrop, false);
+		});
+	}
+
+	function initPalette() {
+		var promise = $.Deferred();
+		var imageLoadCount = 0;
+		var loadsStarted = false;
+		withElement("palette", function(palette) {
+			forEach(data.palette.contents, function(pEntry, pIndex) {
+				var ele = document.createElement("canvas");
+				ele.draggable = true;
+				ele.width = ele.height = config.palette.elementRadius * 2;
+				ele.dataset.paletteIndex = pIndex;
+				ele.className = "palette";
+				palette.appendChild(ele);
+				pEntry.ele = ele;
+				if (pEntry.image) {
+					imageLoadCount += 1;
+					loadImage(pEntry.image.url).then(function(img) {
+						pEntry.image.obj = img;
+						imageLoadCount -= 1;
+						if (loadsStarted && imageLoadCount == 0) {
+							promise.resolve();
+						}
+					});
+				}
+			});
+		});
+		if (imageLoadCount == 0) {
+			promise.resolve();
+		}
+		else {
+			loadsStarted = true;
+		}
+		return promise;
+	}
+
+	function renderCanvas() {
+	}
+
+	function renderPalette() {
+		forEach(data.palette.contents, function(pEntry) {
+			var hexConfig = {
+				radius: config.palette.elementRadius,
+			}
+			if (pEntry.image) {
+				hexConfig.image = pEntry.image.obj;
+			}
+			else {
+				hexConfig.fillStyle = pEntry.fill;
+			}
+			withContext(pEntry.ele, function(context) {
+				drawRegularHexagon(context, hexConfig);
+			});
+		});
+	}
+
+	function enablePalette() {
+		forEach(data.palette.contents, function(pEntry) {
+			pEntry.ele.addEventListener("dragstart", handleDragStart, false);
+			pEntry.ele.addEventListener("dragend", handleDragEnd, false);
+			pEntry.ele.addEventListener("drop", handleDrop, false);
+		});
+	}
+
+	function go() {
+		initCanvas().then(function() {
+			return initPalette();
+		}).then(function() {
+			renderCanvas();
+			renderPalette();
+			enableCanvas();
+			enablePalette();
+		})
+	}
+	setTimeout(go, 500);
 
 </script>
 </html>
