@@ -1,8 +1,10 @@
 <html>
 <head>
 <title>Hex Drag and Drop</title>
+<link rel="stylesheet" type="text/css" href="css/hexx.css"/>
 <style>
 body {
+	font-family: Tahoma, Arial;
 	position: relative;
 }
 .heading {
@@ -19,35 +21,6 @@ body {
 	margin: auto;
 	padding-bottom: 5px;
 }
-.contents {
-	border: solid 1px #ddd;
-	padding: 5px;
-	width: 600px;
-	margin: auto;
-}
-canvas.palette {
-	cursor: pointer;
-	margin: 5px;
-}
-div.palette {
-	border: solid 1px #ddd;
-	background-color: #eee;
-	display: inline-block;
-	vertical-align: top;
-}
-div.canvas {
-	position: relative;
-	display: inline-block;
-	border: solid 1px #ddd;
-	background-color: #eee;
-}
-canvas.overlay {
-	position: absolute;
-	top: 0px;
-	left: 0px;
-}
-canvas.drawing {
-}
 </style>
 </head>
 <body>
@@ -55,7 +28,7 @@ canvas.drawing {
 <div id="subheading" class="subheading">
 	Drag items from the palette on the left and drop them into the grid on the right.
 </div>
-<div id="contents" class="contents">
+<div id="gridedit" class="gridedit">
 	<div id="palette" class="palette"></div>
 	<div id="canvas" class="canvas"></div>
 </div>
