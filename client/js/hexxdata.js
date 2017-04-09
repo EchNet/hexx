@@ -9,6 +9,8 @@ HEXX.config = {
 		width: 520,
 		height: 420, 
 		elementRadius: 30,
+		originX: 260,
+		originY: 210,
 		lineStyle: "rgba(150,150,150,0.5)",
 		lineWidth: 2
 	}
@@ -46,6 +48,14 @@ HEXX.data = {
 	canvas: {
 		id: 47,
 		name: "rich",
-		contents: []
+		contents: [
+			{
+				row: 0,
+				column: 0,
+				image: {
+					url: "img/castle.jpg"
+				}
+			},
+		]
 	}
 };

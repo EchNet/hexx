@@ -41,6 +41,9 @@ body {
 	var config = HEXX.config;
 	var data = HEXX.data;
 
+	var originX = config.canvas.originX || 0;
+	var originY = config.canvas.originY || 0;
+
 	function withElement(id, func) {
 		var ele = document.getElementById(id);
 		return func(ele);
@@ -108,6 +111,75 @@ body {
 		return false;
 	}
 
+	function getUnitDistance() {
+		return config.canvas.elementRadius * Math.sqrt(3);
+	}
+
+	function centerOfHex(row, column, result) {
+		var unitDistance = getUnitDistance();
+		result = result || {};
+		result.y = originY + (row * unitDistance) + (column * unitDistance) * Math.sin(Math.PI / 6);
+		result.x = originX + (column * unitDistance) * Math.cos(Math.PI / 6);
+		return result;
+	}
+
+	function sq(x) { return x*x; }
+
+	function dist(x0, y0, x1, y1) {
+		return Math.sqrt(sq(y0 - y1) + sq(x1 - x0));
+	}
+
+	function closestHex(offsetX, offsetY) {
+		var x = offsetX - originX;
+		var y = offsetY - originY;
+		var unitDistance = getUnitDistance();
+
+		var slope = Math.tan(Math.PI / 6);
+		var interY = y - (slope * x);
+
+		var guessRow = Math.floor(interY / unitDistance);
+		var guessColumn = Math.floor(dist(originX, interY, x, y) * (x < 0 ? -1 : 1) / unitDistance);
+
+		var best = {};
+		for (var row = guessRow - 1; row < guessRow + 1; ++row) {
+			for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
+				var center = centerOfHex(row, col);
+				var d = dist(x, y, center.x, center.y);
+				if (best.distance == null || best.distance > d) {
+					best.distance = d;
+					best.row = row;
+					best.column = col;
+				}
+			}
+		}
+
+		var retval = best.row == null ? null : centerOfHex(best.row, best.column, {
+			offsetX: offsetX, offsetY: offsetY,
+			row: best.row, column: best.column
+		});
+console.log(retval);
+		return retval;
+	}
+
+function handleMouseOver(e) {
+withElement("overlay-canvas", function(canvas) {
+	clearCanvas(canvas);
+	var center = closestHex(e.offsetX, e.offsetY);
+	if (center) {
+		withContext(canvas, function(context) {
+			HEXX.drawRegularHexagon(context, {
+				radius: config.canvas.elementRadius,
+				x: center.x,
+				y: center.y,
+				lineWidth: config.canvas.lineWidth,
+				strokeStyle: config.canvas.lineStyle
+			});
+		});
+	}
+});
+	return false;
+}
+
 	function handleDragEnter(e) {
 		showFeedback(this, e);
 	}
@@ -167,27 +239,94 @@ body {
 		return false;
 	}
 
-	function sizeAsCanvas(canvas) {
-		canvas.width = config.canvas.width;
-		canvas.height = config.canvas.height;
+	function loadImages() {
+		var promise = $.Deferred();
+		var imageLoadCount = 0;
+		var loadsStarted = false;
+
+		function loadAllImages(entry) {
+			if (entry.image) {
+				imageLoadCount += 1;
+				loadImage(entry.image.url).then(function(img) {
+					entry.image.obj = img;
+					imageLoadCount -= 1;
+					if (loadsStarted && imageLoadCount == 0) {
+						promise.resolve();
+					}
+				})
+				.catch(function(error) {
+					imageLoadCount -= 1;
+					if (loadsStarted && imageLoadCount == 0) {
+						promise.resolve();
+					}
+				});
+			}
+		}
+
+		forEach(data.palette.contents, loadAllImages);
+		forEach(data.canvas.contents, loadAllImages);
+		if (imageLoadCount == 0) {
+			promise.resolve();
+		}
+		else {
+			loadsStarted = true;
+		}
+		return promise;
 	}
 
-	function initCanvas() {
-		var promise = $.Deferred();
+	function renderHex(canvas, entry, conf, pos) {
+		var hexDescr = {
+			radius: conf.elementRadius,
+		}
+		if (entry.image && entry.image.obj) {
+			hexDescr.image = entry.image.obj;
+		}
+		else if (entry.fill) {
+			hexDescr.fillStyle = entry.fill;
+		}
+		if (pos) {
+			hexDescr.x = pos.x;
+			hexDescr.y = pos.y;
+		}
+		hexDescr.strokeStyle = conf.lineStyle;
+		hexDescr.lineWidth = conf.lineWidth;
+		withContext(canvas, function(context) {
+			HEXX.drawRegularHexagon(context, hexDescr);
+		});
+	}
+
+	function renderPalette() {
+		withElement("palette", function(palette) {
+			forEach(data.palette.contents, function(pEntry, pIndex) {
+				var container = document.createElement("div");
+				var canvas = createPaletteElement(pIndex);
+				pEntry.ele = canvas;
+				container.appendChild(canvas);
+				palette.appendChild(container);
+				renderHex(canvas, pEntry, config.palette);
+			});
+		});
+	}
+
+	function renderCanvas() {
 		withElement("canvas", function(container) {
 			var drawingCanvas = document.createElement("canvas");
 			drawingCanvas.id = "drawing-canvas";
 			drawingCanvas.className = "drawing";
-			sizeAsCanvas(drawingCanvas);
+			drawingCanvas.width = config.canvas.width;
+			drawingCanvas.height = config.canvas.height;
 			var overlayCanvas = document.createElement("canvas");
 			overlayCanvas.id = "overlay-canvas";
 			overlayCanvas.className = "overlay";
-			sizeAsCanvas(overlayCanvas);
+			overlayCanvas.width = config.canvas.width;
+			overlayCanvas.height = config.canvas.height;
 			container.appendChild(drawingCanvas);
 			container.appendChild(overlayCanvas);
-			promise.resolve();
+			forEach(data.canvas.contents, function(cEntry) {
+				renderHex(drawingCanvas, cEntry, config.canvas,
+						centerOfHex(cEntry.row, cEntry.column));
+			});
 		});
-		return promise;
 	}
 
 	function enableCanvas() {
@@ -195,6 +334,8 @@ body {
 			canvas.addEventListener("dragenter", handleDragEnter, false);
 			canvas.addEventListener("dragover", handleDragOver, false);
 			canvas.addEventListener("dragleave", handleDragLeave, false);
+//canvas.addEventListener("mouseover", handleMouseOver, false);
+//canvas.addEventListener("mousemove", handleMouseOver, false);
 			canvas.addEventListener("drop", handleDrop, false);
 		});
 	}
@@ -208,67 +349,6 @@ body {
 		return canvas;
 	}
 
-	function initPalette() {
-		var promise = $.Deferred();
-		var imageLoadCount = 0;
-		var loadsStarted = false;
-		withElement("palette", function(palette) {
-			forEach(data.palette.contents, function(pEntry, pIndex) {
-				var container = document.createElement("div");
-				var canvas = createPaletteElement(pIndex);
-				pEntry.ele = canvas;
-				container.appendChild(canvas);
-				palette.appendChild(container);
-				if (pEntry.image) {
-					imageLoadCount += 1;
-					loadImage(pEntry.image.url).then(function(img) {
-						pEntry.image.obj = img;
-						imageLoadCount -= 1;
-						if (loadsStarted && imageLoadCount == 0) {
-							promise.resolve();
-						}
-					})
-					.catch(function(error) {
-						imageLoadCount -= 1;
-						if (loadsStarted && imageLoadCount == 0) {
-							promise.resolve();
-						}
-					});
-				}
-			});
-		});
-		if (imageLoadCount == 0) {
-			promise.resolve();
-		}
-		else {
-			loadsStarted = true;
-		}
-		return promise;
-	}
-
-	function renderCanvas() {
-	}
-
-	function renderPalette() {
-		forEach(data.palette.contents, function(pEntry) {
-			var hexConfig = {
-				radius: config.palette.elementRadius,
-			}
-			if (pEntry.image) {
-				hexConfig.image = pEntry.image.obj;
-			}
-			else {
-				hexConfig.fillStyle = pEntry.fill;
-			}
-			hexConfig.strokeStyle = config.palette.lineStyle;
-			hexConfig.lineWidth = config.palette.lineWidth;
-			withContext(pEntry.ele, function(context) {
-				context.clearRect(0, 0, pEntry.ele.width, pEntry.ele.height);
-				HEXX.drawRegularHexagon(context, hexConfig);
-			});
-		});
-	}
-
 	function enablePalette() {
 		forEach(data.palette.contents, function(pEntry) {
 			pEntry.ele.addEventListener("dragstart", handleDragStart, false);
@@ -278,9 +358,7 @@ body {
 	}
 
 	function go() {
-		initCanvas().then(function() {
-			return initPalette();
-		}).then(function() {
+		loadImages().then(function() {
 			renderCanvas();
 			renderPalette();
 			enableCanvas();
