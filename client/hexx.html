@@ -2,29 +2,62 @@
 <head>
 <title>Hex Drag and Drop</title>
 <style>
+body {
+	position: relative;
+}
+.heading {
+	font-size: 20px;
+	width: 200px;
+	text-align: center;
+	margin: auto;
+	padding-bottom: 5px;
+}
+.subheading {
+	font-size: 12px;
+	width: 400px;
+	text-align: center;
+	margin: auto;
+	padding-bottom: 5px;
+}
+.contents {
+	border: solid 1px #ddd;
+	padding: 5px;
+	width: 600px;
+	margin: auto;
+}
 canvas.palette {
 	cursor: pointer;
-	margin: 10px;
+	margin: 5px;
+}
+div.palette {
+	border: solid 1px #ddd;
+	background-color: #eee;
+	display: inline-block;
+	vertical-align: top;
 }
 div.canvas {
 	position: relative;
-	margin: 40px;
-}
-div.canvas > canvas {
-	position: absolute;
-	top: 0px;
-}
-canvas.drawing {
+	display: inline-block;
 	border: solid 1px #ddd;
 	background-color: #eee;
+}
+canvas.overlay {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+}
+canvas.drawing {
 }
 </style>
 </head>
 <body>
-<div id="palette"></div>
-<div id="canvas" class="canvas">
-	<canvas id="drawing-canvas" class="drawing" width="800" height="300"></canvas>
-	<canvas id="overlay-canvas" class="overlay" width="800" height="300"></canvas>
+<div id="heading" class="heading">Hexx Demo</div>
+<div id="subheading" class="subheading">
+	Drag items from the palette on the left and drop them into the grid on the right.
+</div>
+<div id="contents" class="contents">
+	<div id="palette" class="palette"></div>
+	<div id="canvas" class="canvas"></div>
 </div>
 </body>
 <script src="js/lib/jquery-3.1.1.slim.min.js"></script>
@@ -32,12 +65,12 @@ canvas.drawing {
 
 	var config = {
 		palette: {
-			elementRadius: 40
+			elementRadius: 30
 		},
 		canvas: {
-			width: 800,
-			height: 300, 
-			elementRadius: 40,
+			width: 520,
+			height: 420, 
+			elementRadius: 30,
 			lineStyle: "rgba(150,150,150,0.5)",
 			lineWidth: 2
 		}
@@ -50,9 +83,9 @@ canvas.drawing {
 			contents: [
 				{
 					id: 1,
-					name: "who?",
+					name: "castle",
 					image: {
-						url: "img/usr-cre.png"
+						url: "img/castle.jpg"
 					}
 				},
 				{
@@ -67,8 +100,8 @@ canvas.drawing {
 				},
 				{
 					id: 4,
-					name: "yellow",
-					fill: "rgba(240,240,0,1)"
+					name: "green",
+					fill: "rgba(0,255,0,1)"
 				}
 			]
 		},
@@ -290,8 +323,27 @@ canvas.drawing {
 		return false;
 	}
 
+	function sizeAsCanvas(canvas) {
+		canvas.width = config.canvas.width;
+		canvas.height = config.canvas.height;
+	}
+
 	function initCanvas() {
-		return $.Deferred().resolve();
+		var promise = $.Deferred();
+		withElement("canvas", function(container) {
+			var drawingCanvas = document.createElement("canvas");
+			drawingCanvas.id = "drawing-canvas";
+			drawingCanvas.className = "drawing";
+			sizeAsCanvas(drawingCanvas);
+			var overlayCanvas = document.createElement("canvas");
+			overlayCanvas.id = "overlay-canvas";
+			overlayCanvas.className = "overlay";
+			sizeAsCanvas(overlayCanvas);
+			container.appendChild(drawingCanvas);
+			container.appendChild(overlayCanvas);
+			promise.resolve();
+		});
+		return promise;
 	}
 
 	function enableCanvas() {
@@ -309,13 +361,15 @@ canvas.drawing {
 		var loadsStarted = false;
 		withElement("palette", function(palette) {
 			forEach(data.palette.contents, function(pEntry, pIndex) {
-				var ele = document.createElement("canvas");
-				ele.draggable = true;
-				ele.width = ele.height = config.palette.elementRadius * 2;
-				ele.dataset.paletteIndex = pIndex;
-				ele.className = "palette";
-				palette.appendChild(ele);
-				pEntry.ele = ele;
+				var container = document.createElement("div");
+				var canvas = document.createElement("canvas");
+				canvas.draggable = true;
+				canvas.width = canvas.height = config.palette.elementRadius * 2;
+				canvas.dataset.paletteIndex = pIndex;
+				canvas.className = "palette";
+				pEntry.ele = canvas;
+				container.appendChild(canvas);
+				palette.appendChild(container);
 				if (pEntry.image) {
 					imageLoadCount += 1;
 					loadImage(pEntry.image.url).then(function(img) {
