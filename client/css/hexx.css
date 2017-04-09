@@ -10,7 +10,6 @@ canvas.palette {
 }
 div.palette {
 	border: solid 1px #ddd;
-	background-color: #eee;
 	display: inline-block;
 	vertical-align: top;
 }
