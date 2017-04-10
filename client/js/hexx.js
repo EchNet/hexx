@@ -46,45 +46,67 @@
 		}
 	}
 
-	function closestHex(e) {
-		var radius = config.canvas.elementRadius;
-		var canvasWidth = config.canvas.width;
-		var canvasHeight = config.canvas.height;
-		var rowOffset = radius * Math.sqrt(3);
-		var columnOffset = radius * 1.5;
+	var DEG30 = Math.PI / 6;
+	var SINDEG30 = Math.sin(DEG30);
+	var COSDEG30 = Math.cos(DEG30);
+	var TANDEG30 = Math.tan(DEG30);
 
-		var x = e.offsetX;
-		var y = e.offsetY;
+	function centerOfHex(row, column, result) {
+		var unitDistance = getUnitDistance();
+		var rowDistance = row * unitDistance;
+		var colDistance = column * unitDistance;
+		result = result || {};
+		result.y = originY + rowDistance + colDistance*SINDEG30;
+		result.x = originX + colDistance*COSDEG30;
+		return result;
+	}
+
+	function sq(x) { return x*x; }
+
+	function signity(x) {
+		return x < 0 ? -1 : (x == 0 ? 0 : 1);
+	}
+
+	function dist(x0, y0, x1, y1) {
+		return Math.sqrt(sq(y0 - y1) + sq(x1 - x0));
+	}
+
+	function round(x) {
+		return Math.floor(x + 0.5);
+	}
+
+	function closestHex(x, y) {
+		var dx = x - originX;
+		var dy = y - originY;
+		var unitDistance = getUnitDistance();
+
+		var interY = dy - TANDEG30*dx;
+		var guessRow = round(interY / unitDistance);
+		var guessColumn = round(dist(0, interY, dx, dy) * signity(dx) / unitDistance);
 
 		var best = {};
-
-		var centerX = -rowOffset;
-		for (var col = -1; centerX < canvasWidth + columnOffset; ++col) {
-			var centerY = (col % 2) * rowOffset/2;
-			while (centerY < canvasHeight + rowOffset) {
-				var dsq = (centerX-x)*(centerX-x) + (centerY-y)*(centerY-y);
-				if (best.dsq == null || dsq < best.dsq) {
-					best.dsq = dsq;
-					best.centerX = centerX;
-					best.centerY = centerY;
+		for (var row = guessRow - 1; row < guessRow + 1; ++row) {
+			for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
+				var center = centerOfHex(row, col);
+				var d = dist(x, y, center.x, center.y);
+				if (best.distance == null || best.distance > d) {
+					best.distance = d;
+					best.row = row;
+					best.column = col;
 				}
-				centerY += rowOffset;
 			}
-			centerX += columnOffset;
 		}
 
-		if (best.centerX != null && best.centerX >= 0 && best.centerX < canvasWidth &&
-			best.centerY >= 0 && best.centerY < canvasHeight) {
-			return {
-				x: best.centerX, y: best.centerY
-			}
-		}
+		return best.row == null ? null : centerOfHex(best.row, best.column, {
+			row: best.row, column: best.column
+		});
 	}
 
 	g.HEXX = {
 		traceRegularHexagon: traceRegularHexagon,
 		drawRegularHexagon: drawRegularHexagon,
-		closestHex: closestHex
+		closestHex: closestHex,
+		centerOfHex: centerOfHex
 	}
 
 })(window);

@@ -82,7 +82,7 @@ body {
 
 	function showFeedback(canvas, e) {
 		clearCanvas(canvas);
-		var center = HEXX.closestHex(e);
+		var center = HEXX.closestHex(e.offsetX, e.offsetY);
 		if (center) {
 			withContext(canvas, function(context) {
 				HEXX.drawRegularHexagon(context, {
@@ -114,71 +114,6 @@ body {
 	function getUnitDistance() {
 		return config.canvas.elementRadius * Math.sqrt(3);
 	}
-
-	function centerOfHex(row, column, result) {
-		var unitDistance = getUnitDistance();
-		result = result || {};
-		result.y = originY + (row * unitDistance) + (column * unitDistance) * Math.sin(Math.PI / 6);
-		result.x = originX + (column * unitDistance) * Math.cos(Math.PI / 6);
-		return result;
-	}
-
-	function sq(x) { return x*x; }
-
-	function dist(x0, y0, x1, y1) {
-		return Math.sqrt(sq(y0 - y1) + sq(x1 - x0));
-	}
-
-	function closestHex(offsetX, offsetY) {
-		var x = offsetX - originX;
-		var y = offsetY - originY;
-		var unitDistance = getUnitDistance();
-
-		var slope = Math.tan(Math.PI / 6);
-		var interY = y - (slope * x);
-
-		var guessRow = Math.floor(interY / unitDistance);
-		var guessColumn = Math.floor(dist(originX, interY, x, y) * (x < 0 ? -1 : 1) / unitDistance);
-
-		var best = {};
-		for (var row = guessRow - 1; row < guessRow + 1; ++row) {
-			for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
-				var center = centerOfHex(row, col);
-				var d = dist(x, y, center.x, center.y);
-				if (best.distance == null || best.distance > d) {
-					best.distance = d;
-					best.row = row;
-					best.column = col;
-				}
-			}
-		}
-
-		var retval = best.row == null ? null : centerOfHex(best.row, best.column, {
-			offsetX: offsetX, offsetY: offsetY,
-			row: best.row, column: best.column
-		});
-console.log(retval);
-		return retval;
-	}
-
-function handleMouseOver(e) {
-withElement("overlay-canvas", function(canvas) {
-	clearCanvas(canvas);
-	var center = closestHex(e.offsetX, e.offsetY);
-	if (center) {
-		withContext(canvas, function(context) {
-			HEXX.drawRegularHexagon(context, {
-				radius: config.canvas.elementRadius,
-				x: center.x,
-				y: center.y,
-				lineWidth: config.canvas.lineWidth,
-				strokeStyle: config.canvas.lineStyle
-			});
-		});
-	}
-});
-	return false;
-}
 
 	function handleDragEnter(e) {
 		showFeedback(this, e);
@@ -231,7 +166,7 @@ withElement("overlay-canvas", function(canvas) {
 	function handleDrop(e) {
 		e.stopPropagation && e.stopPropagation();
 		clearCanvas(this);
-		var center = HEXX.closestHex(e);
+		var center = HEXX.closestHex(e.offsetX, e.offsetY);
 		if (center) {
 			var cIndex = addToCanvas(getDraggedPaletteEntry(e), center);
 			drawCanvasEntry(cIndex);
@@ -324,7 +259,7 @@ withElement("overlay-canvas", function(canvas) {
 			container.appendChild(overlayCanvas);
 			forEach(data.canvas.contents, function(cEntry) {
 				renderHex(drawingCanvas, cEntry, config.canvas,
-						centerOfHex(cEntry.row, cEntry.column));
+						HEXX.centerOfHex(cEntry.row, cEntry.column));
 			});
 		});
 	}
@@ -334,8 +269,8 @@ withElement("overlay-canvas", function(canvas) {
 			canvas.addEventListener("dragenter", handleDragEnter, false);
 			canvas.addEventListener("dragover", handleDragOver, false);
 			canvas.addEventListener("dragleave", handleDragLeave, false);
-//canvas.addEventListener("mouseover", handleMouseOver, false);
-//canvas.addEventListener("mousemove", handleMouseOver, false);
+			//canvas.addEventListener("mouseover", handleMouseOver, false);
+			//canvas.addEventListener("mousemove", handleMouseOver, false);
 			canvas.addEventListener("drop", handleDrop, false);
 		});
 	}
