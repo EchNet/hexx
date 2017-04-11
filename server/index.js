@@ -38,9 +38,9 @@ function servePage(pageConfig, response) {
 }
 
 // Index page.
-server.get("/", function(req, res) {
-  servePage(CONFIG.pages[CONFIG.defaultPage], res);
-});
+//server.get("/", function(req, res) {
+  //servePage(CONFIG.pages[CONFIG.defaultPage], res);
+//});
 
 // Client configuration JS.
 server.get("/js/services.js", function(req, res) {
