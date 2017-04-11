@@ -30,7 +30,10 @@ body {
 </div>
 <div id="gridedit" class="gridedit">
 	<div id="palette" class="palette"></div>
-	<div id="canvas" class="canvas"></div>
+	<div class="canvasAndToolbar">
+		<div id="canvas" class="canvas"></div>
+		<div id="toolbar" class="toolbar"></div>
+	</div>
 </div>
 </body>
 <script src="js/lib/jquery-3.1.1.slim.min.js"></script>
@@ -95,6 +98,19 @@ body {
 			});
 			return center;
 		}
+	}
+
+	function resetCanvasContents() {
+		data.canvas.contents = data.canvas.initialContents.slice(0);
+	}
+
+	function renderCanvasContents() {
+		withElement("drawing-canvas", function(canvas) {
+			forEach(data.canvas.contents, function(cEntry) {
+				renderHex(canvas, cEntry, config.canvas,
+						HEXX.centerOfHex(cEntry.row, cEntry.column));
+			});
+		});
 	}
 
 	function handleDragStart(e) {
@@ -165,13 +181,21 @@ body {
 
 	function handleDrop(e) {
 		e.stopPropagation && e.stopPropagation();
-		clearCanvas(this);
+		clearCanvas(this);  // erase drag feedback
 		var center = HEXX.closestHex(e.offsetX, e.offsetY);
 		if (center) {
 			var cIndex = addToCanvas(getDraggedPaletteEntry(e), center);
 			drawCanvasEntry(cIndex);
 		}
 		return false;
+	}
+
+	function handleReset(e) {
+		resetCanvasContents();
+		withElement("drawing-canvas", function(canvas) {
+			clearCanvas(canvas);
+		});
+		renderCanvasContents();
 	}
 
 	function loadImages() {
@@ -200,6 +224,7 @@ body {
 
 		forEach(data.palette.contents, loadAllImages);
 		forEach(data.canvas.contents, loadAllImages);
+		forEach(data.canvas.initialContents, loadAllImages);
 		if (imageLoadCount == 0) {
 			promise.resolve();
 		}
@@ -257,10 +282,16 @@ body {
 			overlayCanvas.height = config.canvas.height;
 			container.appendChild(drawingCanvas);
 			container.appendChild(overlayCanvas);
-			forEach(data.canvas.contents, function(cEntry) {
-				renderHex(drawingCanvas, cEntry, config.canvas,
-						HEXX.centerOfHex(cEntry.row, cEntry.column));
-			});
+			renderCanvasContents();
+		});
+	}
+
+	function renderToolbar() {
+		withElement("toolbar", function(container) {
+			var resetButton = document.createElement("button");
+			resetButton.innerHTML = "Reset";
+			resetButton.addEventListener("click", handleReset, false);
+			container.appendChild(resetButton);
 		});
 	}
 
@@ -296,6 +327,7 @@ body {
 		loadImages().then(function() {
 			renderCanvas();
 			renderPalette();
+			renderToolbar();
 			enableCanvas();
 			enablePalette();
 		})

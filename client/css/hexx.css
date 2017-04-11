@@ -1,6 +1,4 @@
 .gridedit {
-	border: solid 1px #ddd;
-	padding: 5px;
 	width: 600px;
 	margin: auto;
 }
@@ -13,11 +11,16 @@ div.palette {
 	display: inline-block;
 	vertical-align: top;
 }
+div.canvasAndToolbar {
+	display: inline-block;
+}
 div.canvas {
 	position: relative;
-	display: inline-block;
 	border: solid 1px #ddd;
 	background-color: #eee;
+}
+div.toolbar {
+	padding: 5px;
 }
 canvas.overlay {
 	position: absolute;
