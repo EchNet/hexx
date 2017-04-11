@@ -30,9 +30,6 @@
 			context.fillStyle = options.fillStyle;
 			context.fillRect(x - radius, y - radius, radius*2, radius*2);
 		}
-		else {
-			context.clearRect(x - radius, y - radius, radius*2, radius*2);
-		}
 		if (options.image) {
 			context.drawImage(options.image, x - radius, y - radius, radius*2, radius*2);
 		}

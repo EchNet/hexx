@@ -53,8 +53,15 @@ body {
 	}
 
 	function withContext(canvas, func) {
-		var context = canvas.getContext("2d");
-		return func(context, canvas);
+		if (typeof canvas == "string") {
+			withElement(canvas, function(canvas) {
+				withContext(canvas, func);
+			});
+		}
+		else {
+			var context = canvas.getContext("2d");
+			return func(context, canvas);
+		}
 	}
 
 	function forEach(array, func) {
@@ -78,7 +85,7 @@ body {
 	}
 
 	function clearCanvas(canvas) {
-		withContext(canvas, function(context) {
+		withContext(canvas, function(context, canvas) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
 		});
 	}
@@ -104,12 +111,50 @@ body {
 		data.canvas.contents = data.canvas.initialContents.slice(0);
 	}
 
+	function drawGrid(canvas) {
+		var cWidth = canvas.width;
+		var cHeight = canvas.height;
+		var conf = config.canvas;
+		var radius = config.canvas.elementRadius;
+		var rowSep = radius * Math.sqrt(3);
+		withContext(canvas, function(context) {
+			var hexDescr = {
+				radius: conf.elementRadius,
+				strokeStyle: conf.lineStyle || "rgba(0,0,0,0.5)",
+				lineWidth: 1
+			}
+
+			for (var colIncr = -1; colIncr <= 1; colIncr += 2) {
+				var column = 0;
+				for (;;) {
+					var pos = HEXX.centerOfHex(0, column);
+					if (pos.x < -radius || pos.x > cWidth + radius) {
+						break;
+					}
+					var x = pos.x;
+					var y = pos.y - (Math.floor(pos.y / rowSep) + 1) * rowSep;
+
+					while (y < cHeight + radius) {
+						hexDescr.x = x;
+						hexDescr.y = y;
+						HEXX.drawRegularHexagon(context, hexDescr);
+						y += rowSep;
+					}
+					column += colIncr;
+				}
+			}
+
+		});
+	}
+
 	function renderCanvasContents() {
 		withElement("drawing-canvas", function(canvas) {
 			forEach(data.canvas.contents, function(cEntry) {
-				renderHex(canvas, cEntry, config.canvas,
-						HEXX.centerOfHex(cEntry.row, cEntry.column));
+				drawCanvasEntry(canvas, cEntry);
 			});
+			if (config.canvas.showGrid) {
+				drawGrid(canvas);
+			}
 		});
 	}
 
@@ -149,34 +194,19 @@ body {
 		return pEntry;
 	}
 
-	function addToCanvas(pEntry, center) {
-		var options = {
-			radius: config.canvas.elementRadius,
-			x: center.x,
-			y: center.y,
-			fillStyle: pEntry.fill,
-			lineWidth: config.canvas.lineWidth,
-			strokeStyle: config.canvas.lineStyle
-		}
-		if (pEntry.image) {
-			if (pEntry.image.obj) {
-				options.image = pEntry.image.obj;
-			}
-			else {
-				options.fillStyle = "rgba(0,0,0,1)";
-			}
-		}
-		data.canvas.contents.push(options);
-		return data.canvas.contents.length - 1;
+	function canvasEntryFromPaletteEntry(pEntry, center) {
+		var cEntry = $.extend({}, pEntry);
+		cEntry.row = center.row;
+		cEntry.column = center.column;
+		cEntry.radius = config.canvas.elementRadius,
+		cEntry.lineWidth = config.canvas.lineWidth;
+		cEntry.strokeStyle = config.canvas.lineStyle;
+		return cEntry;
 	}
 
-	function drawCanvasEntry(cIndex) {
-		var cEntry = data.canvas.contents[cIndex];
-		withElement("drawing-canvas", function(canvas) {
-			withContext(canvas, function(context) {
-				HEXX.drawRegularHexagon(context, cEntry);
-			});
-		});
+	function drawCanvasEntry(drawingCanvas, cEntry) {
+		renderHex(drawingCanvas, cEntry, config.canvas,
+				HEXX.centerOfHex(cEntry.row, cEntry.column));
 	}
 
 	function handleDrop(e) {
@@ -184,8 +214,9 @@ body {
 		clearCanvas(this);  // erase drag feedback
 		var center = HEXX.closestHex(e.offsetX, e.offsetY);
 		if (center) {
-			var cIndex = addToCanvas(getDraggedPaletteEntry(e), center);
-			drawCanvasEntry(cIndex);
+			var cEntry = canvasEntryFromPaletteEntry(getDraggedPaletteEntry(e), center);
+			data.canvas.contents.push(cEntry);
+			drawCanvasEntry("drawing-canvas", cEntry);
 		}
 		return false;
 	}
@@ -196,6 +227,13 @@ body {
 			clearCanvas(canvas);
 		});
 		renderCanvasContents();
+	}
+
+	function handleShowHideGrid(e) {
+		config.canvas.showGrid = !config.canvas.showGrid;
+		clearCanvas("drawing-canvas");
+		renderCanvasContents();
+		this.innerHTML = (config.canvas.showGrid ? "Hide" : "Show") + " grid";
 	}
 
 	function loadImages() {
@@ -292,6 +330,11 @@ body {
 			resetButton.innerHTML = "Reset";
 			resetButton.addEventListener("click", handleReset, false);
 			container.appendChild(resetButton);
+
+			var showHideGridButton = document.createElement("button");
+			showHideGridButton.innerHTML = "Show grid";
+			showHideGridButton.addEventListener("click", handleShowHideGrid, false);
+			container.appendChild(showHideGridButton);
 		});
 	}
 
@@ -319,7 +362,6 @@ body {
 		forEach(data.palette.contents, function(pEntry) {
 			pEntry.ele.addEventListener("dragstart", handleDragStart, false);
 			pEntry.ele.addEventListener("dragend", handleDragEnd, false);
-			pEntry.ele.addEventListener("drop", handleDrop, false);
 		});
 	}
 
