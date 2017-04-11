@@ -20,3 +20,5 @@ NEXT:
 	Double-click to clear hex (and return to sender)
 
 	Ability to save the board (offering persistence between page loads)
+
+	Ability to save various boards.
