@@ -14,7 +14,14 @@ define([], function() {
 				originX: 260,
 				originY: 180,
 				lineStyle: "rgba(150,150,150,0.5)",
-				lineWidth: 2
+				lineWidth: 2,
+				proximityPlacement: 1,
+				constraints: {
+					"red2": [ "red1" ],
+					"red3": [ "red2" ],
+					"green2": [ "green1" ],
+					"green3": [ "green2" ]
+				}
 			}
 		},
 
@@ -23,31 +30,34 @@ define([], function() {
 				name: "palette0",
 				contents: [
 					{
-						name: "castle",
-						value: 0,
+						value: "castle",
 						image: {
 							url: "img/castle.jpg"
 						}
 					},
 					{
-						value: 10,
+						value: "red1",
 						fill: "rgba(255,225,225,1)"
 					},
 					{
-						value: 11,
+						value: "red2",
 						fill: "rgba(255,150,150,1)"
 					},
 					{
-						value: 12,
+						value: "red2",
 						fill: "rgba(255,0,0,1)"
 					},
 					{
-						value: 20,
-						fill: "rgba(125,125,255,1)"
+						value: "green1",
+						fill: "rgba(100,255,100,1)"
 					},
 					{
-						value: 30,
-						fill: "rgba(100,200,100,1)"
+						value: "green2",
+						fill: "rgba(70,220,70,1)"
+					},
+					{
+						value: "green3",
+						fill: "rgba(0,150,0,1)"
 					}
 				]
 			},

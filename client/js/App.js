@@ -1,29 +1,17 @@
-define([ "jquery", "hexxdata", "hexx" ], function($, hexxdata, HEXX) {
+define([ "jquery", "hexxdata", "hexx", "base" ], function($, hexxdata, HEXX) {
 
 	var config = hexxdata.config;
 	var data = hexxdata.data;
 
 	function withElement(id, func) {
-		var ele = document.getElementById(id);
-		return func(ele);
+		return func(document.getElementById(id));
 	}
 
 	function withContext(canvas, func) {
 		if (typeof canvas == "string") {
-			withElement(canvas, function(canvas) {
-				withContext(canvas, func);
-			});
+			canvas = document.getElementById(canvas);
 		}
-		else {
-			var context = canvas.getContext("2d");
-			return func(context, canvas);
-		}
-	}
-
-	function forEach(array, func) {
-		for (var i in array) {
-			func(array[i], i);
-		}
+		return func(canvas.getContext("2d"), canvas);
 	}
 
 	function loadImage(url) {
@@ -64,9 +52,9 @@ define([ "jquery", "hexxdata", "hexx" ], function($, hexxdata, HEXX) {
 			}
 		}
 
-		forEach(data.palette.contents, loadAllImages);
-		forEach(data.canvas.contents, loadAllImages);
-		forEach(data.canvas.initialContents, loadAllImages);
+		data.palette.contents.forEach(loadAllImages);
+		data.canvas.contents.forEach(loadAllImages);
+		data.canvas.initialContents.forEach(loadAllImages);
 		if (imageLoadCount == 0) {
 			promise.resolve();
 		}
@@ -116,7 +104,7 @@ define([ "jquery", "hexxdata", "hexx" ], function($, hexxdata, HEXX) {
 
 		function renderCanvasContents() {
 			withElement("drawing-canvas", function(canvas) {
-				forEach(data.canvas.contents, function(cEntry) {
+				data.canvas.contents.forEach(function(cEntry) {
 					drawCanvasEntry(canvas, cEntry);
 				});
 				if (config.canvas.showGrid) {
@@ -221,74 +209,63 @@ define([ "jquery", "hexxdata", "hexx" ], function($, hexxdata, HEXX) {
 			});
 		}
 
-		function renderPalette() {
-			withElement("palette", function(palette) {
-				forEach(data.palette.contents, function(pEntry, pIndex) {
-					var container = document.createElement("div");
-					var canvas = createPaletteElement(pIndex);
-					pEntry.ele = canvas;
-					container.appendChild(canvas);
-					palette.appendChild(container);
-					renderHex(canvas, pEntry, config.palette);
-				});
+		// Render palette.
+		withElement("palette", function(palette) {
+			data.palette.contents.forEach(function(pEntry, pIndex) {
+				var container = document.createElement("div");
+				var canvas = createPaletteElement(pIndex);
+				pEntry.ele = canvas;
+				container.appendChild(canvas);
+				palette.appendChild(container);
+				renderHex(canvas, pEntry, config.palette);
 			});
-		}
+		});
 
-		function renderCanvas() {
-			withElement("canvas", function(container) {
-				var drawingCanvas = document.createElement("canvas");
-				drawingCanvas.id = "drawing-canvas";
-				drawingCanvas.className = "drawing";
-				drawingCanvas.width = config.canvas.width;
-				drawingCanvas.height = config.canvas.height;
-				var overlayCanvas = document.createElement("canvas");
-				overlayCanvas.id = "overlay-canvas";
-				overlayCanvas.className = "overlay";
-				overlayCanvas.width = config.canvas.width;
-				overlayCanvas.height = config.canvas.height;
-				container.appendChild(drawingCanvas);
-				container.appendChild(overlayCanvas);
-				renderCanvasContents();
-			});
-		}
+		// Render canvas.
+		withElement("canvas", function(container) {
+			var drawingCanvas = document.createElement("canvas");
+			drawingCanvas.id = "drawing-canvas";
+			drawingCanvas.className = "drawing";
+			drawingCanvas.width = config.canvas.width;
+			drawingCanvas.height = config.canvas.height;
+			var overlayCanvas = document.createElement("canvas");
+			overlayCanvas.id = "overlay-canvas";
+			overlayCanvas.className = "overlay";
+			overlayCanvas.width = config.canvas.width;
+			overlayCanvas.height = config.canvas.height;
+			container.appendChild(drawingCanvas);
+			container.appendChild(overlayCanvas);
+			renderCanvasContents();
+		});
 
-		function renderToolbar() {
-			withElement("toolbar", function(container) {
-				var resetButton = document.createElement("button");
-				resetButton.innerHTML = "Reset";
-				resetButton.addEventListener("click", handleReset, false);
-				container.appendChild(resetButton);
+		// Render toolbar.
+		withElement("toolbar", function(container) {
+			var resetButton = document.createElement("button");
+			resetButton.innerHTML = "Reset";
+			resetButton.addEventListener("click", handleReset, false);
+			container.appendChild(resetButton);
 
-				var showHideGridButton = document.createElement("button");
-				showHideGridButton.innerHTML = "Show grid";
-				showHideGridButton.addEventListener("click", handleShowHideGrid, false);
-				container.appendChild(showHideGridButton);
-			});
-		}
+			var showHideGridButton = document.createElement("button");
+			showHideGridButton.innerHTML = "Show grid";
+			showHideGridButton.addEventListener("click", handleShowHideGrid, false);
+			container.appendChild(showHideGridButton);
+		});
 
-		function enableCanvas() {
-			withElement("overlay-canvas", function(canvas) {
-				canvas.addEventListener("dragenter", handleDragEnter, false);
-				canvas.addEventListener("dragover", handleDragOver, false);
-				canvas.addEventListener("dragleave", handleDragLeave, false);
-				//canvas.addEventListener("mouseover", handleMouseOver, false);
-				//canvas.addEventListener("mousemove", handleMouseOver, false);
-				canvas.addEventListener("drop", handleDrop, false);
-			});
-		}
+		// Enable canvas drag and drop.
+		withElement("overlay-canvas", function(canvas) {
+			canvas.addEventListener("dragenter", handleDragEnter, false);
+			canvas.addEventListener("dragover", handleDragOver, false);
+			canvas.addEventListener("dragleave", handleDragLeave, false);
+			//canvas.addEventListener("mouseover", handleMouseOver, false);
+			//canvas.addEventListener("mousemove", handleMouseOver, false);
+			canvas.addEventListener("drop", handleDrop, false);
+		});
 
-		function enablePalette() {
-			forEach(data.palette.contents, function(pEntry) {
-				pEntry.ele.addEventListener("dragstart", handleDragStart, false);
-				pEntry.ele.addEventListener("dragend", handleDragEnd, false);
-			});
-		}
-
-		renderCanvas();
-		renderPalette();
-		renderToolbar();
-		enableCanvas();
-		enablePalette();
+		// Enable palette element drag and drop.
+		data.palette.contents.forEach(function(pEntry) {
+			pEntry.ele.addEventListener("dragstart", handleDragStart, false);
+			pEntry.ele.addEventListener("dragend", handleDragEnd, false);
+		});
 	}
 
 	function open() {

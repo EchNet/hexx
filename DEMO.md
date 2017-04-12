@@ -7,11 +7,11 @@ DONE:
 	A reset button
 	Deployed
 	Optional grid.  With on/off button.
+	Use require.js to modularize.
 
 NEXT:
-	Refactored.
-
 	Proximity constraints.
+		- Can (not) put something with (this value / any value) (on top of / next to) something with (this value / any value)
 
 	Background image on board.
 	Configurable shape.
