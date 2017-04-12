@@ -1,3 +1,21 @@
+body {
+	font-family: Tahoma, Arial;
+	position: relative;
+}
+.heading {
+	font-size: 20px;
+	width: 200px;
+	text-align: center;
+	margin: auto;
+	padding-bottom: 5px;
+}
+.subheading {
+	font-size: 12px;
+	width: 400px;
+	text-align: center;
+	margin: auto;
+	padding-bottom: 5px;
+}
 .gridedit {
 	width: 600px;
 	margin: auto;

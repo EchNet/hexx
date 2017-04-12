@@ -10,14 +10,14 @@ DONE:
 	Use require.js to modularize.
 
 NEXT:
-	Proximity constraints.
-		- Can (not) put something with (this value / any value) (on top of / next to) something with (this value / any value)
-
 	Background image on board.
 	Configurable shape.
 
+	Proximity constraints.
+		- Can (not) put something with (this value / any value) (on top of / next to) something with (this value / any value)
+
 	Countable palette items.
-	Double-click to clear hex (and return to sender)
+	Double-click to clear hex (and return to sender) - but how to reconcile this with constraints?
 
 	Ability to save the board (offering persistence between page loads)
 

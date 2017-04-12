@@ -1,4 +1,5 @@
-define([ "jquery", "hexxdata", "hexx", "base" ], function($, hexxdata, HEXX) {
+define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
+  function($, hexxdata, HEXX, ImageLoader) {
 
 	var config = hexxdata.config;
 	var data = hexxdata.data;
@@ -14,54 +15,19 @@ define([ "jquery", "hexxdata", "hexx", "base" ], function($, hexxdata, HEXX) {
 		return func(canvas.getContext("2d"), canvas);
 	}
 
-	function loadImage(url) {
-		var promise = $.Deferred();
-		var img = new Image();
-		img.onload = function() { 
-			promise.resolve(img);
-		};
-		img.onerror = function(error) {
-			promise.reject(error);
-		}
-		img.crossOrigin = "anonymous";
-		img.src = url;
-		return promise;
-	}
-
 	function loadImages() {
-		var promise = $.Deferred();
-		var imageLoadCount = 0;
-		var loadsStarted = false;
+    var imageLoader = new ImageLoader();
 
 		function loadAllImages(entry) {
 			if (entry.image) {
-				imageLoadCount += 1;
-				loadImage(entry.image.url).then(function(img) {
-					entry.image.obj = img;
-					imageLoadCount -= 1;
-					if (loadsStarted && imageLoadCount == 0) {
-						promise.resolve();
-					}
-				})
-				.catch(function(error) {
-					imageLoadCount -= 1;
-					if (loadsStarted && imageLoadCount == 0) {
-						promise.resolve();
-					}
-				});
-			}
+        entry.image.obj = imageLoader.loadImage(entry.image.url);
+      }
 		}
 
 		data.palette.contents.forEach(loadAllImages);
 		data.canvas.contents.forEach(loadAllImages);
 		data.canvas.initialContents.forEach(loadAllImages);
-		if (imageLoadCount == 0) {
-			promise.resolve();
-		}
-		else {
-			loadsStarted = true;
-		}
-		return promise;
+		return imageLoader.allLoaded();
 	}
 
 	function clearCanvas(canvas) {
@@ -131,8 +97,29 @@ define([ "jquery", "hexxdata", "hexx", "base" ], function($, hexxdata, HEXX) {
 			return cEntry;
 		}
 
+		function drawHex(canvas, entry, conf, pos) {
+			var hexDescr = {
+				radius: conf.elementRadius,
+			}
+			if (entry.image && entry.image.obj) {
+				hexDescr.image = entry.image.obj;
+			}
+			else if (entry.fill) {
+				hexDescr.fillStyle = entry.fill;
+			}
+			if (pos) {
+				hexDescr.x = pos.x;
+				hexDescr.y = pos.y;
+			}
+			hexDescr.strokeStyle = conf.lineStyle;
+			hexDescr.lineWidth = conf.lineWidth;
+			withContext(canvas, function(context) {
+				HEXX.drawRegularHexagon(context, hexDescr);
+			});
+		}
+
 		function drawCanvasEntry(drawingCanvas, cEntry) {
-			renderHex(drawingCanvas, cEntry, config.canvas, grid.centerOfHex(cEntry.row, cEntry.column));
+			drawHex(drawingCanvas, cEntry, config.canvas, grid.centerOfHex(cEntry.row, cEntry.column));
 		}
 
 		function handleDragStart(e) {
@@ -188,27 +175,6 @@ define([ "jquery", "hexxdata", "hexx", "base" ], function($, hexxdata, HEXX) {
 			this.innerHTML = (config.canvas.showGrid ? "Hide" : "Show") + " grid";
 		}
 
-		function renderHex(canvas, entry, conf, pos) {
-			var hexDescr = {
-				radius: conf.elementRadius,
-			}
-			if (entry.image && entry.image.obj) {
-				hexDescr.image = entry.image.obj;
-			}
-			else if (entry.fill) {
-				hexDescr.fillStyle = entry.fill;
-			}
-			if (pos) {
-				hexDescr.x = pos.x;
-				hexDescr.y = pos.y;
-			}
-			hexDescr.strokeStyle = conf.lineStyle;
-			hexDescr.lineWidth = conf.lineWidth;
-			withContext(canvas, function(context) {
-				HEXX.drawRegularHexagon(context, hexDescr);
-			});
-		}
-
 		// Render palette.
 		withElement("palette", function(palette) {
 			data.palette.contents.forEach(function(pEntry, pIndex) {
@@ -217,7 +183,7 @@ define([ "jquery", "hexxdata", "hexx", "base" ], function($, hexxdata, HEXX) {
 				pEntry.ele = canvas;
 				container.appendChild(canvas);
 				palette.appendChild(container);
-				renderHex(canvas, pEntry, config.palette);
+				drawHex(canvas, pEntry, config.palette);
 			});
 		});
 
