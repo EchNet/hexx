@@ -29,7 +29,7 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
     for (var unitId in units) {
       loadAllImages(units[unitId].image);
     }
-    loadAllImages(TypeInfo.canvas.background && TypeInfo.canvas.backgroundImage);
+    loadAllImages(TypeInfo.canvas.background && TypeInfo.canvas.background.image);
 
     return imageLoader.allLoaded();
   }
@@ -102,6 +102,23 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
       var graphic = TypeInfo.units[placement.value];
       var position = position || grid.centerOfHex(placement.row, placement.column);
       drawHex(drawingCanvas, graphic, Styles.canvas, position);
+    }
+
+    function renderCanvasBackground() {
+      withContext("background-canvas", function(context, canvas) {
+        var data = TypeInfo.canvas.background;
+        var width = canvas.width;
+        var height = canvas.height;
+        if (data) {
+          if (data.fill) {
+            context.fillStyle = data.fill;
+            context.fillRect(0, 0, width, height);
+          }
+          if (data.image) {
+            context.drawImage(data.image.obj, 0, 0, width, height);
+          }
+        }
+      });
     }
 
     function renderCanvasContents() {
@@ -207,6 +224,10 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
 
     // Render canvas.
     withElement("canvas", function(container) {
+      var backgroundCanvas = document.createElement("canvas");
+      backgroundCanvas.id = "background-canvas";
+      backgroundCanvas.width = TypeInfo.canvas.width;
+      backgroundCanvas.height = TypeInfo.canvas.height;
       var drawingCanvas = document.createElement("canvas");
       drawingCanvas.id = "drawing-canvas";
       drawingCanvas.className = "drawing";
@@ -217,8 +238,10 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
       overlayCanvas.className = "overlay";
       overlayCanvas.width = TypeInfo.canvas.width;
       overlayCanvas.height = TypeInfo.canvas.height;
+      container.appendChild(backgroundCanvas);
       container.appendChild(drawingCanvas);
       container.appendChild(overlayCanvas);
+      renderCanvasBackground();
       renderCanvasContents();
     });
 

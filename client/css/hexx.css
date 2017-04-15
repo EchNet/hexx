@@ -1,49 +1,52 @@
 body {
-	font-family: Tahoma, Arial;
-	position: relative;
+  font-family: Tahoma, Arial;
+  position: relative;
 }
 .heading {
-	font-size: 20px;
-	width: 200px;
-	text-align: center;
-	margin: auto;
-	padding-bottom: 5px;
+  font-size: 20px;
+  width: 200px;
+  text-align: center;
+  margin: auto;
+  padding-bottom: 5px;
 }
 .subheading {
-	font-size: 12px;
-	width: 400px;
-	text-align: center;
-	margin: auto;
-	padding-bottom: 5px;
+  font-size: 12px;
+  width: 400px;
+  text-align: center;
+  margin: auto;
+  padding-bottom: 5px;
 }
 .gridedit {
-	width: 600px;
-	margin: auto;
+  width: 600px;
+  margin: auto;
 }
 canvas.palette {
-	cursor: pointer;
-	margin: 1px 5px;
+  cursor: pointer;
+  margin: 1px 5px;
 }
 div.palette {
-	border: solid 1px #ddd;
-	display: inline-block;
-	vertical-align: top;
+  border: solid 1px #ddd;
+  display: inline-block;
+  vertical-align: top;
 }
 div.canvasAndToolbar {
-	display: inline-block;
+  display: inline-block;
 }
 div.canvas {
-	position: relative;
-	border: solid 1px #ddd;
-	background-color: #eee;
+  position: relative;
+  border: solid 1px #ddd;
+  background-color: #eee;
 }
 div.toolbar {
-	padding: 5px;
+  padding: 5px;
 }
 canvas.overlay {
-	position: absolute;
-	top: 0px;
-	left: 0px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
 }
 canvas.drawing {
+  position: absolute;
+  top: 0px;
+  left: 0px;
 }

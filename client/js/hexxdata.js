@@ -27,11 +27,11 @@ define([], function() {
           },
           mountain: {
             name: "Mountains",
-            fill: "rgba(125,0,125,1)"
+            fill: "rgba(175,30,175,1)"
           },
           water: {
             name: "Water",
-            fill: "rgba(120,150,255,1)"
+            fill: "rgba(90,220,255,1)"
           },
           forest: {
             name: "Forest",
@@ -57,6 +57,11 @@ define([], function() {
           height: 360, 
           originX: 260,
           originY: 180,
+          background: {
+            image: {
+              url: "img/Desert.jpg"
+            }
+          },
           layout: {
             base: -3,
             rows: [
