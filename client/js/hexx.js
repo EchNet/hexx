@@ -48,103 +48,103 @@ define([], function() {
   var COSDEG30 = Math.cos(DEG30);
   var TANDEG30 = Math.tan(DEG30);
 
-	function sq(x) { return x*x; }
+  function sq(x) { return x*x; }
 
-	function signity(x) {
-		return x < 0 ? -1 : (x == 0 ? 0 : 1);
-	}
-
-	function dist(x0, y0, x1, y1) {
-		return Math.sqrt(sq(y0 - y1) + sq(x1 - x0));
-	}
-
-	function round(x) {
-		return Math.floor(x + 0.5);
-	}
-
-	function init(self, config) {
-
-		var originX = config.originX || 0;
-		var originY = config.originY || 0;
-
-		function getUnitDistance() {
-			return config.elementRadius * Math.sqrt(3);
-		}
-
-		self.centerOfHex = function(row, column, result) {
-			var unitDistance = getUnitDistance();
-			var rowDistance = row * unitDistance;
-			var colDistance = column * unitDistance;
-			result = result || {};
-			result.y = originY + rowDistance + colDistance*SINDEG30;
-			result.x = originX + colDistance*COSDEG30;
-			return result;
-		}
-
-		self.closestHex = function(x, y) {
-			var dx = x - originX;
-			var dy = y - originY;
-			var unitDistance = getUnitDistance();
-
-			var interY = dy - TANDEG30*dx;
-			var guessRow = round(interY / unitDistance);
-			var guessColumn = round(dist(0, interY, dx, dy) * signity(dx) / unitDistance);
-
-			var best = {};
-			for (var row = guessRow - 1; row < guessRow + 1; ++row) {
-				for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
-					var center = self.centerOfHex(row, col);
-					var d = dist(x, y, center.x, center.y);
-					if (best.distance == null || best.distance > d) {
-						best.distance = d;
-						best.row = row;
-						best.column = col;
-					}
-				}
-			}
-
-			return best.row == null ? null : self.centerOfHex(best.row, best.column, {
-				row: best.row, column: best.column
-			});
-		}
-
-		self.drawGrid = function(context, cWidth, cHeight) {
-			var radius = config.elementRadius;
-			var rowSep = radius * Math.sqrt(3);
-			var hexDescr = {
-				radius: config.elementRadius,
-				strokeStyle: config.lineStyle || "rgba(0,0,0,0.5)",
-				lineWidth: 1
-			}
-
-			for (var colIncr = -1; colIncr <= 1; colIncr += 2) {
-				var column = 0;
-				for (;;) {
-					var pos = self.centerOfHex(0, column);
-					if (pos.x < -radius || pos.x > cWidth + radius) {
-						break;
-					}
-					var x = pos.x;
-					var y = pos.y - (Math.floor(pos.y / rowSep) + 1) * rowSep;
-
-					while (y < cHeight + radius) {
-						hexDescr.x = x;
-						hexDescr.y = y;
-						drawRegularHexagon(context, hexDescr);
-						y += rowSep;
-					}
-					column += colIncr;
-				}
-			}
-		}
-	}
-
-  function HexGrid(config) {
-		init(this, config);
+  function signity(x) {
+    return x < 0 ? -1 : (x == 0 ? 0 : 1);
   }
 
-	HexGrid.traceRegularHexagon = traceRegularHexagon;
+  function dist(x0, y0, x1, y1) {
+    return Math.sqrt(sq(y0 - y1) + sq(x1 - x0));
+  }
+
+  function round(x) {
+    return Math.floor(x + 0.5);
+  }
+
+  function init(self, config) {
+
+    var originX = config.originX || 0;
+    var originY = config.originY || 0;
+
+    function getUnitDistance() {
+      return config.elementRadius * Math.sqrt(3);
+    }
+
+    self.centerOfHex = function(row, column, result) {
+      var unitDistance = getUnitDistance();
+      var rowDistance = row * unitDistance;
+      var colDistance = column * unitDistance;
+      result = result || {};
+      result.y = originY + rowDistance + colDistance*SINDEG30;
+      result.x = originX + colDistance*COSDEG30;
+      return result;
+    }
+
+    self.closestHex = function(x, y) {
+      var dx = x - originX;
+      var dy = y - originY;
+      var unitDistance = getUnitDistance();
+
+      var interY = dy - TANDEG30*dx;
+      var guessRow = round(interY / unitDistance);
+      var guessColumn = round(dist(0, interY, dx, dy) * signity(dx) / unitDistance);
+
+      var best = {};
+      for (var row = guessRow - 1; row < guessRow + 1; ++row) {
+        for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
+          var center = self.centerOfHex(row, col);
+          var d = dist(x, y, center.x, center.y);
+          if (best.distance == null || best.distance > d) {
+            best.distance = d;
+            best.row = row;
+            best.column = col;
+          }
+        }
+      }
+
+      return best.row == null ? null : self.centerOfHex(best.row, best.column, {
+        row: best.row, column: best.column
+      });
+    }
+
+    self.drawGrid = function(context, cWidth, cHeight) {
+      var radius = config.elementRadius;
+      var rowSep = radius * Math.sqrt(3);
+      var hexDescr = {
+        radius: config.elementRadius,
+        strokeStyle: config.lineStyle || "rgba(0,0,0,0.5)",
+        lineWidth: 1
+      }
+
+      for (var colIncr = -1; colIncr <= 1; colIncr += 2) {
+        var column = 0;
+        for (;;) {
+          var pos = self.centerOfHex(0, column);
+          if (pos.x < -radius || pos.x > cWidth + radius) {
+            break;
+          }
+          var x = pos.x;
+          var y = pos.y - (Math.floor(pos.y / rowSep) + 1) * rowSep;
+
+          while (y < cHeight + radius) {
+            hexDescr.x = x;
+            hexDescr.y = y;
+            drawRegularHexagon(context, hexDescr);
+            y += rowSep;
+          }
+          column += colIncr;
+        }
+      }
+    }
+  }
+
+  function HexGrid(config) {
+    init(this, config);
+  }
+
+  HexGrid.traceRegularHexagon = traceRegularHexagon;
   HexGrid.drawRegularHexagon = drawRegularHexagon;
 
-	return HexGrid;
+  return HexGrid;
 });
