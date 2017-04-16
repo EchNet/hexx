@@ -71,7 +71,7 @@ define([], function() {
       return config.elementRadius * Math.sqrt(3);
     }
 
-    self.centerOfHex = function(row, column, result) {
+    function centerOfHex(row, column, result) {
       var unitDistance = getUnitDistance();
       var rowDistance = row * unitDistance;
       var colDistance = column * unitDistance;
@@ -80,6 +80,7 @@ define([], function() {
       result.x = originX + colDistance*COSDEG30;
       return result;
     }
+    self.centerOfHex = centerOfHex;
 
     self.closestHex = function(x, y) {
       var dx = x - originX;
@@ -93,7 +94,7 @@ define([], function() {
       var best = {};
       for (var row = guessRow - 1; row < guessRow + 1; ++row) {
         for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
-          var center = self.centerOfHex(row, col);
+          var center = centerOfHex(row, col);
           var d = dist(x, y, center.x, center.y);
           if (best.distance == null || best.distance > d) {
             best.distance = d;
@@ -103,9 +104,21 @@ define([], function() {
         }
       }
 
-      return best.row == null ? null : self.centerOfHex(best.row, best.column, {
+      return best.row == null ? null : centerOfHex(best.row, best.column, {
         row: best.row, column: best.column
       });
+    }
+
+    self.drawGridHex = function(context, row, column) {
+      var hexDescr = {
+        radius: config.elementRadius,
+        strokeStyle: config.lineStyle || "rgba(0,0,0,0.5)",
+        lineWidth: 1
+      }
+      var pos = centerOfHex(row, column);
+      hexDescr.x = pos.x;
+      hexDescr.y = pos.y;
+      drawRegularHexagon(context, hexDescr);
     }
 
     self.drawGrid = function(context, cWidth, cHeight) {
@@ -120,7 +133,7 @@ define([], function() {
       for (var colIncr = -1; colIncr <= 1; colIncr += 2) {
         var column = 0;
         for (;;) {
-          var pos = self.centerOfHex(0, column);
+          var pos = centerOfHex(0, column);
           if (pos.x < -radius || pos.x > cWidth + radius) {
             break;
           }

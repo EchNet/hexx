@@ -5,6 +5,35 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
   var TypeInfo = hexxdata.types.DEMO;
   var Data = hexxdata.data.XYZ;
 
+  var Map;
+
+  function forEachValidHex(callback) {
+    var layout = TypeInfo.canvas.layout;
+    if (layout) {
+      for (var rowOffset = 0; rowOffset < layout.rows.length; ++rowOffset) {
+        var row = layout.rows[rowOffset];
+        var rowIndex = layout.base + rowOffset;
+        for (var colOffset = 0; colOffset < row.length; ++colOffset) {
+          var colIndex = row.base + colOffset;
+          callback(rowIndex, colIndex);
+        }
+      }
+    }
+  }
+
+  function initMap() {
+    if (TypeInfo.canvas.layout) {
+      Map = {};
+      forEachValidHex(function(rowIndex, colIndex) {
+        Map[rowIndex + "," + colIndex] = {};
+      });
+    }
+  }
+
+  function isValidHex(rowIndex, colIndex) {
+    return !Map || !!Map[rowIndex + "," + colIndex];
+  }
+
   function withElement(id, func) {
     return func(document.getElementById(id));
   }
@@ -49,14 +78,14 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
     function showFeedback(canvas, e) {
       clearCanvas(canvas);
       var center = grid.closestHex(e.offsetX, e.offsetY);
-      if (center) {
+      if (center && isValidHex(center.row, center.column)) {
         withContext(canvas, function(context) {
           HEXX.drawRegularHexagon(context, {
             radius: Styles.canvas.elementRadius,
             x: center.x,
             y: center.y,
-            lineWidth: Styles.canvas.lineWidth,
-            strokeStyle: Styles.canvas.lineStyle
+            lineWidth: Styles.feedback.lineWidth,
+            strokeStyle: Styles.feedback.lineStyle
           });
         });
         return center;
@@ -128,7 +157,14 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
         });
         if (Data.display.showGrid) {
           withContext(canvas, function(context) {
-            grid.drawGrid(context, canvas.width, canvas.height);
+            if (!Map) {
+              grid.drawGrid(context, canvas.width, canvas.height);
+            }
+            else {
+              forEachValidHex(function(row, column) {
+                grid.drawGridHex(context, row, column);
+              });
+            }
           });
         }
       });
@@ -183,8 +219,8 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
       e.stopPropagation && e.stopPropagation();
       clearCanvas(this);  // erase drag feedback
       var center = grid.closestHex(e.offsetX, e.offsetY);
-      var pEntry = getDraggedPaletteEntry(e);
-      if (center && pEntry) {
+      if (center && isValidHex(center.row, center.column)) {
+        var pEntry = getDraggedPaletteEntry(e);
         var placement = place(center.row, center.column, pEntry.value);
         drawCanvasPlacement("drawing-canvas", placement, center);
       }
@@ -276,6 +312,7 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
   }
 
   function open() {
+    initMap();
     loadImages().then(function() {
       var grid = new HEXX($.extend({}, Styles.canvas, TypeInfo.canvas));
       init(grid);

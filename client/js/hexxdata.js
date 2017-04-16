@@ -10,7 +10,11 @@ define([], function() {
       },
       canvas: {
         elementRadius: 30,
-        lineStyle: "rgba(150,150,150,0.5)",
+        lineStyle: "rgba(40,40,40,0.5)",
+        lineWidth: 1,
+      },
+      feedback: {
+        lineStyle: "rgba(180,180,180,0.8)",
         lineWidth: 2
       }
     },
@@ -59,19 +63,21 @@ define([], function() {
           originY: 180,
           background: {
             image: {
-              url: "img/Desert.jpg"
+              url: "img/Desert.png"
             }
           },
           layout: {
-            base: -3,
+            base: -4,
             rows: [
-              { base: 3, length: 1 },
-              { base: 2, length: 2 },
-              { base: 1, length: 3 },
-              { base: 0, length: 3 },
-              { base: -1, length: 3 },
-              { base: -2, length: 2 },
-              { base: -3, length: 1 },
+              { base: 3, length: 2 },
+              { base: 1, length: 4 },
+              { base: -1, length: 6 },
+              { base: -3, length: 8 },
+              { base: -4, length: 9 },
+              { base: -4, length: 7 },
+              { base: -4, length: 5 },
+              { base: -4, length: 3 },
+              { base: -4, length: 1 },
             ]
           }
         },
