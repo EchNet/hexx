@@ -10,11 +10,11 @@ define([], function() {
       },
       canvas: {
         elementRadius: 30,
-        lineStyle: "rgba(40,40,40,0.5)",
+        lineStyle: "rgba(60,60,60,1)",
         lineWidth: 1,
       },
       feedback: {
-        lineStyle: "rgba(180,180,180,0.8)",
+        lineStyle: "rgba(220,160,160,0.9)",
         lineWidth: 2
       }
     },
