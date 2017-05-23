@@ -1,18 +1,26 @@
 define([], function() {
 
-  function traceRegularHexagon(context, x, y, radius, angle) {
-    x += Math.cos(angle) * radius;
-    y += Math.sin(angle) * radius;
-    angle += 2*Math.PI/3;
+  var DEG30 = Math.PI/6;
+  var DEG60 = Math.PI/3;
+  var DEG120 = 2*Math.PI/3;
+  var SINDEG30 = Math.sin(DEG30);
+  var COSDEG30 = Math.cos(DEG30);
+  var TANDEG30 = Math.tan(DEG30);
 
-    context.beginPath();
-    context.moveTo(x, y);
+  function describeRegularHexagon(x, y, radius, angle, callback) {
     for (var i = 0; i < 6; ++i) {
       x += Math.cos(angle) * radius;
       y += Math.sin(angle) * radius;
-      context.lineTo(x, y);
-      angle += Math.PI/3;
+      callback(x, y, i);
+      angle += i == 0 ? DEG120 : DEG60;
     }
+  }
+
+  function traceRegularHexagon(context, x, y, radius, angle) {
+    context.beginPath();
+    describeRegularHexagon(x, y, radius, angle, function(x, y, index) {
+      context[index === 0 ? "moveTo" : "lineTo"](x, y);
+    });
     context.closePath();    
   }
 
@@ -42,11 +50,6 @@ define([], function() {
       context.stroke();
     }
   }
-
-  var DEG30 = Math.PI / 6;
-  var SINDEG30 = Math.sin(DEG30);
-  var COSDEG30 = Math.cos(DEG30);
-  var TANDEG30 = Math.tan(DEG30);
 
   function sq(x) { return x*x; }
 
