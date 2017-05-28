@@ -77,19 +77,19 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
 
     function showFeedback(canvas, e) {
       clearCanvas(canvas);
-      var center = grid.closestHex(e.offsetX, e.offsetY);
-      if (center && isValidHex(center.row, center.column)) {
-        withContext(canvas, function(context) {
-          HEXX.drawRegularHexagon(context, {
-            radius: Styles.canvas.elementRadius,
-            x: center.x,
-            y: center.y,
-            lineWidth: Styles.feedback.lineWidth,
-            strokeStyle: Styles.feedback.lineStyle
+      var valid = 0;
+      grid.withContainingHexDo(e.offsetX, e.offsetY, function(row, column) {
+        if (isValidHex(row, column)) {
+          valid = 1;
+          withContext(canvas, function(context) {
+            grid.drawHexAt(row, column, context, {
+              lineWidth: Styles.feedback.lineWidth,
+              strokeStyle: Styles.feedback.lineStyle
+            })
           });
-        });
-        return center;
-      }
+        }
+      });
+      return valid;
     }
 
     function createPaletteElement(pIndex) {
@@ -106,31 +106,32 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
       return TypeInfo.palette[pIndex];
     }
 
-    function drawHex(canvas, graphic, style, position) {
-      var hexDescr = {
-        radius: style.elementRadius,
+    function findCanvasPlacement(row, column) {
+      for (var ix in Data.placements) {
+        var placement = Data.placements[ix];
+        if (placement.row == row && placement.column == column) {
+          return placement;
+        }
       }
-      if (graphic.image && graphic.image.obj) {
-        hexDescr.image = graphic.image.obj;
-      }
-      else if (graphic.fill) {
-        hexDescr.fillStyle = graphic.fill;
-      }
-      if (position) {
-        hexDescr.x = position.x;
-        hexDescr.y = position.y;
-      }
-      hexDescr.strokeStyle = style.lineStyle;
-      hexDescr.lineWidth = style.lineWidth;
-      withContext(canvas, function(context) {
-        HEXX.drawRegularHexagon(context, hexDescr);
-      });
     }
 
-    function drawCanvasPlacement(drawingCanvas, placement, position) {
-      var graphic = TypeInfo.units[placement.value];
-      var position = position || grid.centerOfHex(placement.row, placement.column);
-      drawHex(drawingCanvas, graphic, Styles.canvas, position);
+    function graphicToFill(graphic) {
+      var fill = {};
+      if (graphic.image && graphic.image.obj) {
+        fill.image = graphic.image.obj;
+      }
+      else if (graphic.fill) {
+        fill.fillStyle = graphic.fill;
+      }
+      return fill;
+    }
+
+    function fillCanvasHex(context, row, column) {
+      var placement = findCanvasPlacement(row, column);
+      if (placement) {
+        var graphic = TypeInfo.units[placement.value];
+        grid.drawHexAt(row, column, context, graphicToFill(graphic));
+      }
     }
 
     function renderCanvasBackground() {
@@ -151,32 +152,14 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
     }
 
     function renderCanvasContents() {
-      withElement("drawing-canvas", function(canvas) {
+      withContext("drawing-canvas", function(context, canvas) {
         Data.placements.forEach(function(cEntry) {
-          drawCanvasPlacement(canvas, cEntry);
+          grid.drawHexAt(cEntry.row, cEntry.column, context, TypeInfo.units[cEntry.value]);
         });
         if (Data.display.showGrid) {
-          withContext(canvas, function(context) {
-            if (!Map) {
-              grid.drawGrid(context, canvas.width, canvas.height);
-            }
-            else {
-              forEachValidHex(function(row, column) {
-                grid.drawGridHex(context, row, column);
-              });
-            }
-          });
+          grid.drawGrid(context, canvas.width, canvas.height, isValidHex);
         }
       });
-    }
-
-    function findCanvasPlacement(row, column) {
-      for (var ix in Data.placements) {
-        var placement = Data.placements[ix];
-        if (placement.row == row && placement.column == column) {
-          return placement;
-        }
-      }
     }
 
     function place(row, column, value) {
@@ -218,12 +201,15 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
     function handleDrop(e) {
       e.stopPropagation && e.stopPropagation();
       clearCanvas(this);  // erase drag feedback
-      var center = grid.closestHex(e.offsetX, e.offsetY);
-      if (center && isValidHex(center.row, center.column)) {
-        var pEntry = getDraggedPaletteEntry(e);
-        var placement = place(center.row, center.column, pEntry.value);
-        drawCanvasPlacement("drawing-canvas", placement, center);
-      }
+      grid.withContainingHexDo(e.offsetX, e.offsetY, function(row, column) {
+        if (isValidHex(row, column)) {
+          var pEntry = getDraggedPaletteEntry(e);
+          var placement = place(row, column, pEntry.value);
+          withContextDo("drawing-canvas", function(context) {
+            fillCanvasHex(context, row, column);
+          });
+        }
+      });
       return false;
     }
 
@@ -249,12 +235,23 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
     // Render palette.
     withElement("palette", function(palette) {
       TypeInfo.palette.forEach(function(pEntry, pIndex) {
+        // Create <div><canvas/></div> for each palette entry.
         var container = document.createElement("div");
         var canvas = createPaletteElement(pIndex);
-        pEntry.ele = canvas;
+        pEntry.ele = canvas;   // Stash a reference to the canvas in the palette model.
         container.appendChild(canvas);
         palette.appendChild(container);
-        drawHex(canvas, TypeInfo.units[pEntry.value], Styles.palette);
+        var style = Styles.palette;
+        var graphic = TypeInfo.units[pEntry.value];
+        var radius = style.elementRadius;
+        withContext(canvas, function(context) {
+          HEXX.drawHex(context, radius, radius, radius, {
+            strokeStyle: style.lineStyle,
+            lineWidth: style.lineWidth,
+            image: graphic.image,
+            fillStyle: graphic.fill
+          });
+        });
       });
     });
 
