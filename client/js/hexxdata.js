@@ -14,7 +14,7 @@ define([], function() {
         lineWidth: 1,
       },
       feedback: {
-        lineStyle: "rgba(220,160,160,0.9)",
+        lineStyle: "rgba(170,90,90,0.9)",
         lineWidth: 2
       }
     },
