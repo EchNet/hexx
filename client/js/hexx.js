@@ -1,4 +1,4 @@
-define(["AbstractHexGrid"], function(AbstractHexGrid) {
+define(["AbstractHexGrid", "jquery"], function(AbstractHexGrid, $) {
 
   function traceRegularHexagon(context, x, y, radius) {
     context.beginPath();
@@ -70,13 +70,13 @@ define(["AbstractHexGrid"], function(AbstractHexGrid) {
     context.stroke();
   }
 
-  HexGrid.prototype = {
+  HexGrid.prototype = $.extend({
     drawHexAt: function(row, column, context, options) {
       drawHex(context, this.centerXAt(row, column), this.centerYAt(row, column), 
               this.radius, options);
     },
     drawGrid: HexGrid_drawGrid
-  }
+  }, AbstractHexGrid.prototype);
 
   HexGrid.drawHex = drawHex;
 

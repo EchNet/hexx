@@ -83,41 +83,52 @@ define([], function() {
       describeHexagon(centerXAt(row, column), centerYAt(row, column), radius, callback);
     }
 
-    // This implementation is flawed.  Can you find the flaw?
-    function withContainingHexDo(x, y, callback) {
-      var dx = x - originX;
-      var dy = y - originY;
-
-      var interY = dy - TANDEG30*dx;
-      var guessRow = round(interY / unitDistance);
-      var guessColumn = round(dist(0, interY, dx, dy) * signity(dx) / unitDistance);
-
-      var bestDistance;
-      var bestRow, bestColumn;
-      for (var row = guessRow - 1; row < guessRow + 1; ++row) {
-        for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
-          var d = dist(x, y, centerXAt(row, col), centerYAt(row, col));
-          if (bestDistance == null || bestDistance > d) {
-            bestDistance = d;
-            bestRow = row;
-            bestColumn = col;
-          }
-        }
-      }
-
-      if (bestRow != null) {
-        callback(bestRow, bestColumn);
-      }
-    }
-
     self.centerXAt = centerXAt;
     self.centerYAt = centerYAt;
     self.describeHexagonAt = describeHexagonAt;
-    self.withContainingHexDo = withContainingHexDo;
+  }
+
+  function AbstractHexGrid_withContainingHexDo(x, y, callback) {
+    var self = this;
+
+    var dx = x - self.originX;
+    var dy = y - self.originY;
+    var interY = dy - TANDEG30*dx;
+    var guessRow = round(interY / self.unitDistance);
+    var guessColumn = round(dist(0, interY, dx, dy) * signity(dx) / self.unitDistance);
+
+    var candidates = [];
+
+    function assay(row, column) {
+      var cx = self.centerXAt(row, column);
+      var cy = self.centerYAt(row, column);
+      candidates.push({
+        row: row,
+        column: column,
+        d: dist(x, y, cx, cy)
+      });
+    }
+
+    assay(guessRow, guessColumn);
+    for (var i in ADJACENCY) {
+      assay(guessRow + ADJACENCY[i][0], guessColumn + ADJACENCY[i][1]);
+    }
+
+    candidates.sort(function(a, b) {
+      return a.d - b.d;
+    });
+
+    if (Math.abs(candidates[0].d - candidates[1].d) > 0.5) {
+      callback(candidates[0].row, candidates[0].column);
+    }
   }
 
   AbstractHexGrid.ADJACENCY = ADJACENCY;
   AbstractHexGrid.describeHexagon = describeHexagon;
+
+  AbstractHexGrid.prototype = {
+    withContainingHexDo: AbstractHexGrid_withContainingHexDo
+  }
 
   return AbstractHexGrid;
 });

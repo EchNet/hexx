@@ -1,5 +1,5 @@
 define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
-  function($, hexxdata, HEXX, CanvasModel, ImageLoader) {
+  function($, hexxdata, HexGrid, CanvasModel, ImageLoader) {
 
   var Styles = hexxdata.styles;
   var TypeInfo = hexxdata.types.DEMO;
@@ -52,7 +52,7 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
       canvasModel.setHexValue(placement.row, placement.column, placement.value);
     }
 
-    var grid = new HEXX(canvasModel, $.extend({}, Styles.canvas, TypeInfo.canvas));
+    var grid = new HexGrid(canvasModel, $.extend({}, Styles.canvas, TypeInfo.canvas));
 
     function showFeedback(canvas, e) {
       clearCanvas(canvas);
@@ -85,15 +85,12 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
       return TypeInfo.palette[pIndex];
     }
 
+    // Some naming mismatch.
     function graphicToFill(graphic) {
-      var fill = {};
-      if (graphic.image && graphic.image.obj) {
-        fill.image = graphic.image.obj;
+      return {
+        image: graphic.image,
+        fillStyle: graphic.fill
       }
-      else if (graphic.fill) {
-        fill.fillStyle = graphic.fill;
-      }
-      return fill;
     }
 
     function renderCanvasBackground() {
@@ -203,7 +200,7 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
         var graphic = TypeInfo.units[pEntry.value];
         var radius = style.elementRadius;
         withContext(canvas, function(context) {
-          HEXX.drawHex(context, radius, radius, radius, {
+          HexGrid.drawHex(context, radius, radius, radius, {
             strokeStyle: style.lineStyle,
             lineWidth: style.lineWidth,
             image: graphic.image,
