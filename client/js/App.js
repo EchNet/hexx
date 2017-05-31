@@ -1,38 +1,9 @@
-define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
-  function($, hexxdata, HEXX, ImageLoader) {
+define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
+  function($, hexxdata, HEXX, CanvasModel, ImageLoader) {
 
   var Styles = hexxdata.styles;
   var TypeInfo = hexxdata.types.DEMO;
   var Data = hexxdata.data.XYZ;
-
-  var Map;
-
-  function forEachValidHex(callback) {
-    var layout = TypeInfo.canvas.layout;
-    if (layout) {
-      for (var rowOffset = 0; rowOffset < layout.rows.length; ++rowOffset) {
-        var row = layout.rows[rowOffset];
-        var rowIndex = layout.base + rowOffset;
-        for (var colOffset = 0; colOffset < row.length; ++colOffset) {
-          var colIndex = row.base + colOffset;
-          callback(rowIndex, colIndex);
-        }
-      }
-    }
-  }
-
-  function initMap() {
-    if (TypeInfo.canvas.layout) {
-      Map = {};
-      forEachValidHex(function(rowIndex, colIndex) {
-        Map[rowIndex + "," + colIndex] = {};
-      });
-    }
-  }
-
-  function isValidHex(rowIndex, colIndex) {
-    return !Map || !!Map[rowIndex + "," + colIndex];
-  }
 
   function withElement(id, func) {
     return func(document.getElementById(id));
@@ -73,13 +44,21 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
     Data.placements = TypeInfo.placements.slice(0);
   }
 
-  function init(grid) {
+  function init() {
+
+    var canvasModel = new CanvasModel(TypeInfo.canvas.layout);
+    for (var ix in Data.placements) {
+      var placement = Data.placements[ix];
+      canvasModel.setHexValue(placement.row, placement.column, placement.value);
+    }
+
+    var grid = new HEXX(canvasModel, $.extend({}, Styles.canvas, TypeInfo.canvas));
 
     function showFeedback(canvas, e) {
       clearCanvas(canvas);
       var valid = 0;
       grid.withContainingHexDo(e.offsetX, e.offsetY, function(row, column) {
-        if (isValidHex(row, column)) {
+        if (canvasModel.getHex(row, column)) {
           valid = 1;
           withContext(canvas, function(context) {
             grid.drawHexAt(row, column, context, {
@@ -106,15 +85,6 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
       return TypeInfo.palette[pIndex];
     }
 
-    function findCanvasPlacement(row, column) {
-      for (var ix in Data.placements) {
-        var placement = Data.placements[ix];
-        if (placement.row == row && placement.column == column) {
-          return placement;
-        }
-      }
-    }
-
     function graphicToFill(graphic) {
       var fill = {};
       if (graphic.image && graphic.image.obj) {
@@ -124,14 +94,6 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
         fill.fillStyle = graphic.fill;
       }
       return fill;
-    }
-
-    function fillCanvasHex(context, row, column) {
-      var placement = findCanvasPlacement(row, column);
-      if (placement) {
-        var graphic = TypeInfo.units[placement.value];
-        grid.drawHexAt(row, column, context, graphicToFill(graphic));
-      }
     }
 
     function renderCanvasBackground() {
@@ -157,19 +119,11 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
           grid.drawHexAt(cEntry.row, cEntry.column, context, TypeInfo.units[cEntry.value]);
         });
         if (Data.display.showGrid) {
-          grid.drawGrid(context, canvas.width, canvas.height, isValidHex);
+          grid.drawGrid(context, canvas.width, canvas.height, function(row, column) {
+            return canvasModel.getHex(row, column);
+          });
         }
       });
-    }
-
-    function place(row, column, value) {
-      var placement = findCanvasPlacement(row, column);
-      if (!placement) {
-        placement = { row: row, column: column };
-        Data.placements.push(placement);
-      }
-      placement.value = value;
-      return placement;
     }
 
     function handleDragStart(e) {
@@ -202,12 +156,14 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
       e.stopPropagation && e.stopPropagation();
       clearCanvas(this);  // erase drag feedback
       grid.withContainingHexDo(e.offsetX, e.offsetY, function(row, column) {
-        if (isValidHex(row, column)) {
+        if (canvasModel.getHex(row, column)) {
           var pEntry = getDraggedPaletteEntry(e);
-          var placement = place(row, column, pEntry.value);
-          withContextDo("drawing-canvas", function(context) {
-            fillCanvasHex(context, row, column);
-          });
+          if (canvasModel.setHexValue(row, column, pEntry.value)) {
+            withContextDo("drawing-canvas", function(context) {
+              var graphic = TypeInfo.units[pEntry.value];
+              grid.drawHexAt(row, column, context, graphicToFill(graphic));
+            });
+          }
         }
       });
       return false;
@@ -309,11 +265,7 @@ define([ "jquery", "hexxdata", "hexx", "ImageLoader", "base" ],
   }
 
   function open() {
-    initMap();
-    loadImages().then(function() {
-      var grid = new HEXX($.extend({}, Styles.canvas, TypeInfo.canvas));
-      init(grid);
-    })
+    loadImages().then(init);
   }
 
   return function() {

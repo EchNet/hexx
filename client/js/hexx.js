@@ -32,46 +32,34 @@ define(["AbstractHexGrid", "jquery"], function(AbstractHexGrid, $) {
     }
   }
 
-  function HexGrid(config) {
+  function HexGrid(model, options) {
+    AbstractHexGrid.call(this, options);
+    this.options = options;
+    this.model = model;
+  }
+
+  function HexGrid_drawGrid(context, cWidth, cHeight, isValidFunc) {
     var self = this;
-    AbstractHexGrid.call(self, config);
-
-    function getUnitDistance() {
-      return config.elementRadius * Math.sqrt(3);
+    var options = {
+      strokeStyle: self.options.lineStyle || "rgba(0,0,0,0.5)",
+      lineWidth: 1
     }
 
-    self.drawHexAt = function(row, column, context, options) {
-      drawHex(context, self.centerXAt(row, column), self.centerYAt(row, column), 
-              self.outerRadius, options);
-    }
-
-    self.drawGrid = function(context, cWidth, cHeight) {
-      var radius = config.elementRadius;
-      var rowSep = radius * Math.sqrt(3);
-      var hexDescr = {
-        strokeStyle: config.lineStyle || "rgba(0,0,0,0.5)",
-        lineWidth: 1
-      }
-
-      for (var colIncr = -1; colIncr <= 1; colIncr += 2) {
-        var column = 0;
-        for (;;) {
-          var cx = self.centerXAt(0, column);
-          if (cx < -radius || cx > cWidth + radius) {
-            break;
-          }
-          var cy = self.centerYAt(0, column);
-          var x = cx;
-          var y = cy - (Math.floor(cy / rowSep) + 1) * rowSep;
-
-          while (y < cHeight + radius) {
-            drawHex(context, x, y, config.elementRadius, hexDescr);
-            y += rowSep;
-          }
-          column += colIncr;
+    for (var column = self.minimumColumn; column <= self.maximumColumn; column += 1) {
+      for (var row = self.minimumRow; row <= self.maximumRow; row += 1) {
+        if (isValidFunc(row, column)) {
+          self.drawHexAt(row, column, context, options);
         }
       }
     }
+  }
+
+  HexGrid.prototype = {
+    drawHexAt: function(row, column, context, options) {
+      drawHex(context, this.centerXAt(row, column), this.centerYAt(row, column), 
+              this.radius, options);
+    },
+    drawGrid: HexGrid_drawGrid
   }
 
   HexGrid.drawHex = drawHex;

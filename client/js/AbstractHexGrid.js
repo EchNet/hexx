@@ -35,11 +35,11 @@ define([], function() {
   ]
 
   // Visit the vertices of the hexagon with center at (cx,cy).
-  function describeHexagon(cx, cy, outerRadius, angle, callback) {
+  function describeHexagon(cx, cy, radius, angle, callback) {
     var x = cx, y = cy;
     for (var i = 0; i < 6; ++i) {
-      x += Math.cos(angle) * outerRadius;
-      y += Math.sin(angle) * outerRadius;
+      x += Math.cos(angle) * radius;
+      y += Math.sin(angle) * radius;
       callback(x, y, i);
       angle += i == 0 ? DEG120 : DEG60;
     }
@@ -55,12 +55,19 @@ define([], function() {
     var originX = self.originX = options.originX || 0;
     var originY = self.originY = options.originY || 0;
 
+    var width = self.width = options.width || 800;
+    var height = self.height = options.height || 600;
+
+    self.minimumRow = -5;
+    self.maximumRow = 5;
+    self.minimumColumn = -5;
+    self.maximumColumn = 5;
+
     // This is the distance between adjacent vertices or between the center and a vertex.
-    var outerRadius = self.outerRadius = options.elementRadius || 100;
+    var radius = self.radius = options.elementRadius || 100;
     // Unit distance is the distance between corresponding points of any two adjacent hexes.
-    var unitDistance = self.unitDistance = outerRadius * Math.sqrt(3);
-    // This is the shortest distance from the center of a hex to a point on its edge.
-    var innerRadius = self.innerRadius = unitDistance / 2;
+    var unitDistance = self.unitDistance = radius * Math.sqrt(3);
+    // This is the distance between column centers.
 
     function centerXAt(row, column) {
       return originX + unitDistance*(/* row*Math.sin(0) + */ column*COSDEG30);
@@ -72,7 +79,7 @@ define([], function() {
 
     // Visit the vertices of the hexagon at (row,column).
     function describeHexagonAt(row, column, callback) {
-      describeHexagon(centerXAt(row, column), centerYAt(row, column), outerRadius, 0, callback);
+      describeHexagon(centerXAt(row, column), centerYAt(row, column), radius, 0, callback);
     }
 
     // This implementation is flawed.  Can you find the flaw?
