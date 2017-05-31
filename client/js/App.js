@@ -118,6 +118,12 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
         Data.placements.forEach(function(cEntry) {
           grid.drawHexAt(cEntry.row, cEntry.column, context, TypeInfo.units[cEntry.value]);
         });
+      });
+    }
+
+    function renderGrid() {
+      withContext("grid-canvas", function(context, canvas) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
         if (Data.display.showGrid) {
           grid.drawGrid(context, canvas.width, canvas.height, function(row, column) {
             return canvasModel.getHex(row, column);
@@ -178,13 +184,9 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
     }
 
     function handleShowHideGrid(e) {
-      var showGrid = Data.display.showGrid;
-      showGrid = !showGrid;
+      var showGrid = !Data.display.showGrid;
       Data.display.showGrid = showGrid;
-
-      clearCanvas("drawing-canvas");
-      renderCanvasContents();
-
+      renderGrid();
       this.innerHTML = (showGrid ? "Hide" : "Show") + " grid";
     }
 
@@ -213,25 +215,37 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
 
     // Render canvas.
     withElement("canvas", function(container) {
+
       var backgroundCanvas = document.createElement("canvas");
       backgroundCanvas.id = "background-canvas";
       backgroundCanvas.width = TypeInfo.canvas.width;
       backgroundCanvas.height = TypeInfo.canvas.height;
+      container.appendChild(backgroundCanvas);
+
       var drawingCanvas = document.createElement("canvas");
       drawingCanvas.id = "drawing-canvas";
-      drawingCanvas.className = "drawing";
+      drawingCanvas.className = "overlay";
       drawingCanvas.width = TypeInfo.canvas.width;
       drawingCanvas.height = TypeInfo.canvas.height;
+      container.appendChild(drawingCanvas);
+
+      var gridCanvas = document.createElement("canvas");
+      gridCanvas.id = "grid-canvas";
+      gridCanvas.className = "overlay";
+      gridCanvas.width = TypeInfo.canvas.width;
+      gridCanvas.height = TypeInfo.canvas.height;
+      container.appendChild(gridCanvas);
+
       var overlayCanvas = document.createElement("canvas");
       overlayCanvas.id = "overlay-canvas";
       overlayCanvas.className = "overlay";
       overlayCanvas.width = TypeInfo.canvas.width;
       overlayCanvas.height = TypeInfo.canvas.height;
-      container.appendChild(backgroundCanvas);
-      container.appendChild(drawingCanvas);
       container.appendChild(overlayCanvas);
+
       renderCanvasBackground();
       renderCanvasContents();
+      renderGrid();
     });
 
     // Render toolbar.

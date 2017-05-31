@@ -37,16 +37,11 @@ div.canvas {
   border: solid 1px #ddd;
   background-color: #eee;
 }
+div.canvas > canvas.overlay {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
 div.toolbar {
   padding: 5px;
-}
-canvas.overlay {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-}
-canvas.drawing {
-  position: absolute;
-  top: 0px;
-  left: 0px;
 }

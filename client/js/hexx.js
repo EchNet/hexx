@@ -41,7 +41,7 @@ define(["AbstractHexGrid"], function(AbstractHexGrid) {
   function HexGrid_drawGrid(context, cWidth, cHeight, isValidFunc) {
     var self = this;
 
-    context.save();
+    context.beginPath();
     context.strokeStyle = self.options.lineStyle || "rgba(0,0,0,0.5)";
     context.lineWidth = 1;
 
@@ -68,7 +68,6 @@ define(["AbstractHexGrid"], function(AbstractHexGrid) {
     }
 
     context.stroke();
-    context.restore();
   }
 
   HexGrid.prototype = {
