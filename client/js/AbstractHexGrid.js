@@ -35,8 +35,9 @@ define([], function() {
   ]
 
   // Visit the vertices of the hexagon with center at (cx,cy).
-  function describeHexagon(cx, cy, radius, angle, callback) {
+  function describeHexagon(cx, cy, radius, callback) {
     var x = cx, y = cy;
+    var angle = 0;
     for (var i = 0; i < 6; ++i) {
       x += Math.cos(angle) * radius;
       y += Math.sin(angle) * radius;
@@ -79,7 +80,7 @@ define([], function() {
 
     // Visit the vertices of the hexagon at (row,column).
     function describeHexagonAt(row, column, callback) {
-      describeHexagon(centerXAt(row, column), centerYAt(row, column), radius, 0, callback);
+      describeHexagon(centerXAt(row, column), centerYAt(row, column), radius, callback);
     }
 
     // This implementation is flawed.  Can you find the flaw?
@@ -95,7 +96,7 @@ define([], function() {
       var bestRow, bestColumn;
       for (var row = guessRow - 1; row < guessRow + 1; ++row) {
         for (var col = guessColumn - 1; col < guessColumn + 1; ++col) {
-          var d = dist(x, y, centerXOf(row, col), centerYOf(row, col));
+          var d = dist(x, y, centerXAt(row, col), centerYAt(row, col));
           if (bestDistance == null || bestDistance > d) {
             bestDistance = d;
             bestRow = row;

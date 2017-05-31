@@ -1,8 +1,8 @@
-define(["AbstractHexGrid", "jquery"], function(AbstractHexGrid, $) {
+define(["AbstractHexGrid"], function(AbstractHexGrid) {
 
   function traceRegularHexagon(context, x, y, radius) {
     context.beginPath();
-    AbstractHexGrid.describeHexagon(x, y, radius, 0, function(x, y, index) {
+    AbstractHexGrid.describeHexagon(x, y, radius, function(x, y, index) {
       context[index === 0 ? "moveTo" : "lineTo"](x, y);
     });
     context.closePath();    
@@ -40,18 +40,35 @@ define(["AbstractHexGrid", "jquery"], function(AbstractHexGrid, $) {
 
   function HexGrid_drawGrid(context, cWidth, cHeight, isValidFunc) {
     var self = this;
-    var options = {
-      strokeStyle: self.options.lineStyle || "rgba(0,0,0,0.5)",
-      lineWidth: 1
-    }
 
-    for (var column = self.minimumColumn; column <= self.maximumColumn; column += 1) {
-      for (var row = self.minimumRow; row <= self.maximumRow; row += 1) {
+    context.save();
+    context.strokeStyle = self.options.lineStyle || "rgba(0,0,0,0.5)";
+    context.lineWidth = 1;
+
+    for (var row = self.minimumRow; row <= self.maximumRow; row += 1) {
+      for (var column = self.minimumColumn; column <= self.maximumColumn; column += 1) {
         if (isValidFunc(row, column)) {
-          self.drawHexAt(row, column, context, options);
+          var x0, y0;
+          function advance(x, y, index) {
+            var drawLine = 0;
+            if (index > 0) {
+              var side = AbstractHexGrid.ADJACENCY[index - 1];
+              drawLine = side[0] > 0 || (side[0] == 0 && side[1] > 0) || !isValidFunc(row + side[0], column + side[1]);
+            }
+            else {
+              x0 = x;
+              y0 = y;
+            }
+            context[drawLine ? "lineTo" : "moveTo"](x, y);
+          }
+          self.describeHexagonAt(row, column, advance);
+          advance(x0, y0, 6);
         }
       }
     }
+
+    context.stroke();
+    context.restore();
   }
 
   HexGrid.prototype = {
