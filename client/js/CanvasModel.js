@@ -26,8 +26,10 @@ define([], function() {
 
   function CanvasModel_setHexValue(row, column, value) {
     var hex = this.getHex(row, column);
-    if (!hex) console.log("warning: bad coords in model [" + row + "," + column + "]");
-    hex.value = value;
+    if (hex) {
+      hex.value = value;
+    }
+    return hex;
   }
 
   CanvasModel.prototype = {

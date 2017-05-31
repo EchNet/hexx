@@ -165,7 +165,7 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
         if (canvasModel.getHex(row, column)) {
           var pEntry = getDraggedPaletteEntry(e);
           if (canvasModel.setHexValue(row, column, pEntry.value)) {
-            withContextDo("drawing-canvas", function(context) {
+            withContext("drawing-canvas", function(context) {
               var graphic = TypeInfo.units[pEntry.value];
               grid.drawHexAt(row, column, context, graphicToFill(graphic));
             });
