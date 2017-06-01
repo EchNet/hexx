@@ -21,8 +21,10 @@ body {
   margin: auto;
 }
 canvas.palette {
-  cursor: pointer;
   margin: 1px 5px;
+}
+canvas.palette[draggable] {
+  cursor: pointer;
 }
 div.palette {
   border: solid 1px #ddd;

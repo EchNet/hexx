@@ -32,9 +32,21 @@ define([], function() {
     return hex;
   }
 
+  function CanvasModel_valueCount(value) {
+    var count = 0;
+    var map = this.map;
+    for (var key in map) {
+      if (map[key].value === value) {
+        ++count;
+      }
+    }
+    return count;
+  }
+
   CanvasModel.prototype = {
     getHex: CanvasModel_getHex,
-    setHexValue: CanvasModel_setHexValue
+    setHexValue: CanvasModel_setHexValue,
+    valueCount: CanvasModel_valueCount
   }
 
   return CanvasModel;

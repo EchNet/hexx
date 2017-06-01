@@ -6,7 +6,11 @@ define([], function() {
       palette: {
         elementRadius: 25,
         lineStyle: "rgba(100,100,100,0.8)",
-        lineWidth: 1
+        lineWidth: 1,
+        countSize: 13,
+        countFont: "Courier",
+        countFillStyle: "rgba(80,0,0,0.8)",
+        countTextStyle: "rgba(255,255,255,1)"
       },
       canvas: {
         elementRadius: 30,
@@ -22,7 +26,7 @@ define([], function() {
     // Types are defined by the host.
     types: {
       DEMO: {
-        units: {
+        values: {
           castle: {
             name: "Castle",
             image: {
@@ -44,7 +48,8 @@ define([], function() {
         },
         palette: [
           {
-            value: "castle"
+            value: "castle",
+            limit: 2
           },
           {
             value: "mountain",
@@ -57,7 +62,7 @@ define([], function() {
           }
         ],
         canvas: {
-          width: 520,     // FIXME: this is relative to display prefereence.
+          width: 520,     // FIXME: this is relative to display preference.
           height: 360, 
           originX: 260,
           originY: 180,

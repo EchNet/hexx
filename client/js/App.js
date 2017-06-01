@@ -25,9 +25,9 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
       }
     }
 
-    var units = TypeInfo.units;
-    for (var unitId in units) {
-      loadAllImages(units[unitId].image);
+    var values = TypeInfo.values;
+    for (var vid in values) {
+      loadAllImages(values[vid].image);
     }
     loadAllImages(TypeInfo.canvas.background && TypeInfo.canvas.background.image);
 
@@ -71,15 +71,6 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
       return valid;
     }
 
-    function createPaletteElement(pIndex) {
-      var canvas = document.createElement("canvas");
-      canvas.draggable = true;
-      canvas.width = canvas.height = Styles.palette.elementRadius * 2;
-      canvas.dataset.paletteIndex = pIndex;
-      canvas.className = "palette";
-      return canvas;
-    }
-
     function getDraggedPaletteEntry(e) {
       var pIndex = e.dataTransfer.getData("text/plain");
       return TypeInfo.palette[pIndex];
@@ -113,7 +104,7 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
     function renderCanvasContents() {
       withContext("drawing-canvas", function(context, canvas) {
         Data.placements.forEach(function(cEntry) {
-          grid.drawHexAt(cEntry.row, cEntry.column, context, TypeInfo.units[cEntry.value]);
+          grid.drawHexAt(cEntry.row, cEntry.column, context, TypeInfo.values[cEntry.value]);
         });
       });
     }
@@ -159,14 +150,16 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
       e.stopPropagation && e.stopPropagation();
       clearCanvas(this);  // erase drag feedback
       grid.withContainingHexDo(e.offsetX, e.offsetY, function(row, column) {
-        if (canvasModel.getHex(row, column)) {
-          var pEntry = getDraggedPaletteEntry(e);
-          if (canvasModel.setHexValue(row, column, pEntry.value)) {
-            withContext("drawing-canvas", function(context) {
-              var graphic = TypeInfo.units[pEntry.value];
-              grid.drawHexAt(row, column, context, graphicToFill(graphic));
-            });
-          }
+        var pEntry = getDraggedPaletteEntry(e);
+        var hex = canvasModel.getHex(row, column);
+        if (hex && hex.value != pEntry.value) {
+          bumpPaletteCount(hex.value, 1);
+          hex.value = pEntry.value;
+          bumpPaletteCount(hex.value, -1);
+          withContext("drawing-canvas", function(context) {
+            var graphic = TypeInfo.values[pEntry.value];
+            grid.drawHexAt(row, column, context, graphicToFill(graphic));
+          });
         }
       });
       return false;
@@ -187,26 +180,84 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
       this.innerHTML = (showGrid ? "Hide" : "Show") + " grid";
     }
 
+    function drawPCount(context, canvas, count) {
+      if (count < 0) count = 0;
+      var s = Styles.palette.countSize;
+      var x = canvas.width - s;
+      var y = canvas.height - s;
+      context.fillStyle = "rgba(90,0,0,1)";
+      context.fillRect(x, y, s, s);
+      context.font = (s-2) + "px " + Styles.palette.countFont;
+      context.textAlign="center";
+      context.fillStyle = "rgba(255,255,255,1)";
+      context.fillText(count, x + s/2, y + s*0.75);
+    }
+
+    function drawPaletteEntry(pEntry) {
+      var style = Styles.palette;
+      var graphic = TypeInfo.values[pEntry.value];
+      var radius = style.elementRadius;
+      withContext(pEntry.canvas, function(context, canvas) {
+        HexGrid.drawHex(context, radius, radius, radius, {
+          strokeStyle: style.lineStyle,
+          lineWidth: style.lineWidth,
+          image: graphic.image,
+          fillStyle: graphic.fill
+        });
+        if (pEntry.limit) {
+          drawPCount(context, canvas, pEntry.count);
+        }
+      });
+    }
+
+    function redrawPaletteCount(pEntry) {
+      if (pEntry.limit) {
+        withContext(pEntry.canvas, function(context, canvas) {
+          drawPCount(context, canvas, pEntry.count);
+        });
+      }
+    }
+
+    function updatePaletteEntryDraggable(pEntry) {
+      pEntry.canvas.draggable = pEntry.limit == null || pEntry.count > 0;
+    }
+
+    function bumpPaletteCount(value, incr) {
+      TypeInfo.palette.forEach(function(pEntry, pIndex) {
+        if (pEntry.value == value && pEntry.limit != null) {
+          pEntry.count += incr;
+          redrawPaletteCount(pEntry);
+          updatePaletteEntryDraggable(pEntry);
+        }
+      });
+    }
+
+    function createPaletteElement(pIndex) {
+      var canvas = document.createElement("canvas");
+      canvas.width = canvas.height = Styles.palette.elementRadius * 2;
+      canvas.dataset.paletteIndex = pIndex;
+      canvas.className = "palette";
+      return canvas;
+    }
+
+    // Create <div><canvas/></div> for each palette entry.
+    function renderPaletteEntry(pEntry, pIndex) {
+      var canvas = createPaletteElement(pIndex);
+      pEntry.canvas = canvas;   // Stash a reference to the canvas in the palette model.
+      if (pEntry.limit != null) {
+        pEntry.count = pEntry.limit - canvasModel.valueCount(pEntry.value);
+      }
+      drawPaletteEntry(pEntry);
+      updatePaletteEntryDraggable(pEntry);
+      var container = document.createElement("div");
+      container.appendChild(canvas);
+      return container;
+    }
+
     // Render palette.
     withElement("palette", function(palette) {
       TypeInfo.palette.forEach(function(pEntry, pIndex) {
-        // Create <div><canvas/></div> for each palette entry.
-        var container = document.createElement("div");
-        var canvas = createPaletteElement(pIndex);
-        pEntry.ele = canvas;   // Stash a reference to the canvas in the palette model.
-        container.appendChild(canvas);
-        palette.appendChild(container);
-        var style = Styles.palette;
-        var graphic = TypeInfo.units[pEntry.value];
-        var radius = style.elementRadius;
-        withContext(canvas, function(context) {
-          HexGrid.drawHex(context, radius, radius, radius, {
-            strokeStyle: style.lineStyle,
-            lineWidth: style.lineWidth,
-            image: graphic.image,
-            fillStyle: graphic.fill
-          });
-        });
+        palette.appendChild(renderPaletteEntry(pEntry, pIndex));
       });
     });
 
@@ -263,15 +314,13 @@ define([ "jquery", "hexxdata", "hexx", "CanvasModel", "ImageLoader", "base" ],
       canvas.addEventListener("dragenter", handleDragEnter, false);
       canvas.addEventListener("dragover", handleDragOver, false);
       canvas.addEventListener("dragleave", handleDragLeave, false);
-      //canvas.addEventListener("mouseover", handleMouseOver, false);
-      //canvas.addEventListener("mousemove", handleMouseOver, false);
       canvas.addEventListener("drop", handleDrop, false);
     });
 
     // Enable palette element drag and drop.
     TypeInfo.palette.forEach(function(pEntry) {
-      pEntry.ele.addEventListener("dragstart", handleDragStart, false);
-      pEntry.ele.addEventListener("dragend", handleDragEnd, false);
+      pEntry.canvas.addEventListener("dragstart", handleDragStart, false);
+      pEntry.canvas.addEventListener("dragend", handleDragEnd, false);
     });
   }
 

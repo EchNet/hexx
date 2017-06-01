@@ -8,14 +8,16 @@ DONE:
 	Deployed
 	Optional grid.  With on/off button.
 	Use require.js to modularize.
-
-NEXT:
 	Background image on board.
 	Configurable shape.
-
 	Countable palette items.
-	Double-click to clear hex (and return to sender) - but how to reconcile this with constraints?
 
+NEXT:
+	Double-click to clear hex (and return to sender) 
 	Ability to save the board (offering persistence between page loads)
+	Ability to save various boards by name
+        Ability to browse/search boards
+        Authentic
 
-	Ability to save various boards.
+BUGS:
+    Cursor for palette entry stays pointer even if entry is not draggable.
