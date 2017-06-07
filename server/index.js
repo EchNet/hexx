@@ -28,6 +28,11 @@ server.use(bodyParser.raw({
 // Add middleware.
 server.use(require("cookie-parser")());
 server.use(require("./jsonish"));
+server.use(function(req, res, next) {   // auth placeholder
+  req.isAdmin = true;
+  next();
+  return null;
+});
 
 // One page template serves all.
 function servePage(pageConfig, response) {
@@ -70,7 +75,7 @@ function compileClientServiceConfiguration() {
 }
 
 // Routers.
-//server.use("/api", require("./api"));
+server.use("/api", require("./api"));
 
 function setAdminKey() {
   const random = require("./util/random");

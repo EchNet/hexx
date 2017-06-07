@@ -1,8 +1,8 @@
 define([ "jquery" ], function($) {
 
   function ImageLoader() {
-		this.promise = $.Deferred();
-		this.imageLoadCount = 0;
+    this.promise = $.Deferred();
+    this.imageLoadCount = 0;
   }
 
   function loadFinished(self) {
@@ -12,18 +12,18 @@ define([ "jquery" ], function($) {
     }
   }
 
-	function getImage(self, url) {
+  function getImage(self, url) {
     var img = new Image();
-		img.onload = function() { 
+    img.onload = function() { 
       loadFinished(self);
-		};
-		img.onerror = function(error) {
+    };
+    img.onerror = function(error) {
       loadFinished(self);
-		}
-		img.crossOrigin = "anonymous";
-		img.src = url;
+    }
+    img.crossOrigin = "anonymous";
+    img.src = url;
     return img;
-	}
+  }
 
   ImageLoader.prototype = {
     loadImage: function(url) {

@@ -13,11 +13,10 @@ DONE:
 	Countable palette items.
 
 NEXT:
-	Double-click to clear hex (and return to sender) 
 	Ability to save the board (offering persistence between page loads)
 	Ability to save various boards by name
         Ability to browse/search boards
-        Authentic
+        Authentication
 
 BUGS:
     Cursor for palette entry stays pointer even if entry is not draggable.
