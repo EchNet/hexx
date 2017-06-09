@@ -13,7 +13,10 @@ define([], function() {
         var rowIndex = layout.base + rowOffset;
         for (var colOffset = 0; colOffset < row.length; ++colOffset) {
           var colIndex = row.base + colOffset;
-          map[rowIndex + "," + colIndex] = {};
+          map[rowIndex + "," + colIndex] = {
+            row: rowIndex,
+            column: colIndex
+          };
         }
       }
     }
@@ -43,10 +46,23 @@ define([], function() {
     return count;
   }
 
+  function CanvasModel_serializeBoard() {
+    var placements = [];
+    var i = 0;
+    for (var key in this.map) {
+      var entry = this.map[key];
+      if (entry.value != null) {
+        placements[i++] = entry;
+      }
+    }
+    return placements;
+  }
+
   CanvasModel.prototype = {
     getHex: CanvasModel_getHex,
     setHexValue: CanvasModel_setHexValue,
-    valueCount: CanvasModel_valueCount
+    valueCount: CanvasModel_valueCount,
+    serializeBoard: CanvasModel_serializeBoard
   }
 
   return CanvasModel;

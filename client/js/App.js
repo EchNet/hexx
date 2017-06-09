@@ -51,7 +51,7 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
 
   function newBoard(type, oldBoard) {
     return {
-      typeId: type.id,
+      type: { id: type.id },
       display: oldBoard && oldBoard.display || {
         showGrid: 1
       },
@@ -63,7 +63,7 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
     if (Session.board) {
       if (Session.board.id) {
         return loadBoard(Session.board.id).then(function() {
-          return Data.typeId ? loadType(Data.typeId) : null;
+          return Data.type && Data.type.id ? loadType(Data.type.id) : null;
         })
       }
       if (Session.board.type && Session.board.type.id) {
@@ -93,14 +93,14 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
 
     if (!TypeInfo) return;
 
-    var canvasModel = new BoardModel(TypeInfo.canvas.layout);
+    var boardModel = new BoardModel(TypeInfo.canvas.layout);
     if (Data.placements) {
       Data.placements.forEach(function(placement) {
-        canvasModel.setHexValue(placement.row, placement.column, placement.value);
+        boardModel.setHexValue(placement.row, placement.column, placement.value);
       });
     }
 
-    var grid = new HexGrid(canvasModel, TypeInfo.canvas);
+    var grid = new HexGrid(boardModel, TypeInfo.canvas);
     var overlayComponent = withElement("overlay-canvas", function(canvas) {
       canvas.width = TypeInfo.canvas.width;
       canvas.height = TypeInfo.canvas.height;
@@ -116,7 +116,7 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
       overlayComponent.clear();
       var valid = 0;
       grid.withContainingHexDo(e.offsetX, e.offsetY, function(row, column) {
-        if (canvasModel.getHex(row, column)) {
+        if (boardModel.getHex(row, column)) {
           valid = 1;
           overlayComponent.drawHexAt(row, column, {
             lineWidth: TypeInfo.feedback.lineWidth,
@@ -156,6 +156,7 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
     }
 
     function renderBoardContents() {
+      Data.placements = boardModel.serializeBoard();
       Data.placements.forEach(function(placement) {
         boardComponent.drawHexAt(placement.row, placement.column, Values[placement.value]);
       });
@@ -169,7 +170,7 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
         gridComponent.clear();
         if (Data.display.showGrid) {
           gridComponent.drawGrid(function(row, column) {
-            return canvasModel.getHex(row, column);
+            return boardModel.getHex(row, column);
           });
         }
       });
@@ -201,21 +202,25 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
       this.style.opacity = "1";
     }
 
+    function put(pEntry, row, column) {
+      var hex = boardModel.getHex(row, column);
+      if (hex && hex.value != pEntry.key) {
+        bumpPaletteCount(hex.value, 1);
+        hex.value = pEntry.key;
+        bumpPaletteCount(hex.value, -1);
+        boardComponent.drawHexAt(row, column, {
+          image: pEntry.image,
+          fillStyle: pEntry.fill
+        });
+      }
+    }
+
     function handleDrop(e) {
       e.stopPropagation && e.stopPropagation();
       overlayComponent.clear();  // erase drag feedback
       grid.withContainingHexDo(e.offsetX, e.offsetY, function(row, column) {
         var pEntry = getDraggedPaletteEntry(e);
-        var hex = canvasModel.getHex(row, column);
-        if (hex && hex.value != pEntry.key) {
-          bumpPaletteCount(hex.value, 1);
-          hex.value = pEntry.key;
-          bumpPaletteCount(hex.value, -1);
-          boardComponent.drawHexAt(row, column, {
-            image: pEntry.image,
-            fillStyle: pEntry.fill
-          });
-        }
+        put(pEntry, row, column);
       });
       return false;
     }
@@ -231,6 +236,17 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
       Data.display.showGrid = showGrid;
       renderGrid();
       this.innerHTML = (showGrid ? "Hide" : "Show") + " grid";
+    }
+
+    function handleSave() {
+      Data.placements = boardModel.serializeBoard();
+      var saveBoard = new HttpMethod.PostBinary("application/json")
+        .addPathComponent("api")
+        .addPathComponent("boards")
+        .build();
+      saveBoard({}, JSON.stringify(Data)).then(function() {
+        alert("saved");
+      });
     }
 
     function drawPCount(context, canvas, count) {
@@ -298,7 +314,7 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
         var canvas = createPaletteElement(pIndex);
         pEntry.canvas = canvas;   // Stash a reference to the canvas in the palette model.
         if (pEntry.limit != null) {
-          pEntry.count = pEntry.limit - canvasModel.valueCount(pEntry.key);
+          pEntry.count = pEntry.limit - boardModel.valueCount(pEntry.key);
         }
         drawPaletteEntry(pEntry);
         updatePaletteEntryDraggable(pEntry);
@@ -324,6 +340,11 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
       showHideGridButton.innerHTML = (Data.display.showGrid ? "Hide" : "Show") + " grid";
       showHideGridButton.addEventListener("click", handleShowHideGrid, false);
       container.appendChild(showHideGridButton);
+
+      var saveButton = document.createElement("button");
+      saveButton.innerHTML = "Save";
+      saveButton.addEventListener("click", handleSave, false);
+      container.appendChild(saveButton);
     });
 
     // Enable canvas drag and drop.

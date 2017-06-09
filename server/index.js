@@ -16,7 +16,7 @@ for (var mkey in CONFIG.server.mounts) {
 
 // Add POST body parsers.
 var bodyParser = require("body-parser");
-server.use(bodyParser.json({ limit: '100kb' }));
+server.use(bodyParser.json({ limit: '200kb' }));
 server.use(bodyParser.urlencoded({
   limit: '100kb',
   extended: true
@@ -57,11 +57,9 @@ server.get("/a", function(req, res) {
   var payload;
   if (sessionCookie) {
     var fname = "tmp/" + sessionCookie;
-    if (!fs.existsSync("tmp")) {
+    if (fs.existsSync(fname)) {
       payload = fs.readFileSync(fname, "utf8");
-      if (payload) {
-        payload = JSON.parse(payload);
-      }
+      payload = JSON.parse(payload);
     }
   }
 

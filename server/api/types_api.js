@@ -5,6 +5,7 @@ var router = require("express").Router();
 // Retrieve a type.
 router.get("/:id", function(req, res) {
   res.json({
+    id: "XYZ",
     palette: {
       elementRadius: 25,
       lineStyle: "rgba(100,100,100,0.8)",
