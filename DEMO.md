@@ -15,8 +15,9 @@ DONE:
 NEXT:
 	Ability to save the board (offering persistence between page loads)
 	Ability to save various boards by name
-        Ability to browse/search boards
+        Ability to browse boards
         Authentication
+        User data
 
 BUGS:
     Cursor for palette entry stays pointer even if entry is not draggable.

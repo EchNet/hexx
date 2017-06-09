@@ -2,6 +2,8 @@
 
 const pug = require("pug");
 const CONFIG = require("./conf");
+const random = require("./random");
+const fs = require("fs");
 
 // Create server.
 var express = require("express");
@@ -42,10 +44,30 @@ function servePage(pageConfig, response) {
   response.send(pageFunction(pageConfig));
 }
 
-// Index page.
-//server.get("/", function(req, res) {
-  //servePage(CONFIG.pages[CONFIG.defaultPage], res);
-//});
+server.get("/a", function(req, res) {
+  var sessionCookie = req.cookies && req.cookies.s;
+  if (!sessionCookie) {
+    sessionCookie = random.id();
+    res.cookie("s", random.id(), {
+      maxAge: 2147483647,
+      path: "/",
+    });
+  }
+
+  var payload;
+  if (sessionCookie) {
+    var fname = "tmp/" + sessionCookie;
+    if (!fs.existsSync("tmp")) {
+      payload = fs.readFileSync(fname, "utf8");
+      if (payload) {
+        payload = JSON.parse(payload);
+      }
+    }
+  }
+
+  payload = payload || { board: { type: { id: "XYZ" }}};
+  res.json(payload);
+});
 
 // Client configuration JS.
 server.get("/js/services.js", function(req, res) {
@@ -79,7 +101,6 @@ server.use("/api", require("./api"));
 
 function setAdminKey() {
   const random = require("./util/random");
-  const fs = require('fs');
   var adminKey = random.id();
   CONFIG.adminKey = adminKey;
   console.log(adminKey);

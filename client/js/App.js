@@ -1,6 +1,7 @@
 define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx", "CanvasModel", "ImageLoader", "base" ],
   function($, HexCanvasComponent, CanvasComponent, HttpMethod, HexGrid, BoardModel, ImageLoader) {
 
+  var Session;
   var TypeInfo;
   var Data;
   var Values = {};
@@ -16,51 +17,88 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
     return func(canvas.getContext("2d"), canvas);
   }
 
-  function loadBoard() {
+  function loadSession() {
+    var getSession = new HttpMethod.Get()
+      .addPathComponent("a")
+      .build();
+    return getSession({}).then(function(data) {
+      Session = data;
+    });
+  }
+
+  function loadBoard(id) {
     var getBoard = new HttpMethod.Get()
       .addPathComponent("api")
       .addPathComponent("boards")
       .addPathParameter("id")
       .build();
-    return getBoard({ id: "XYZ" }).then(function(data) {
+    return getBoard({ id: id }).then(function(data) {
       Data = data;
     });
   }
 
-  function loadType() {
+  function loadType(id) {
     var getType = new HttpMethod.Get()
       .addPathComponent("api")
       .addPathComponent("types")
       .addPathParameter("id")
       .build();
-    return getType({ id: Data.typeId }).then(function(data) {
+    return getType({ id: id }).then(function(data) {
       TypeInfo = data;
+      return data;
     });
+  }
+
+  function newBoard(type, oldBoard) {
+    return {
+      typeId: type.id,
+      display: oldBoard && oldBoard.display || {
+        showGrid: 1
+      },
+      placements: type.placements && type.placements.slice(0)
+    }
+  }
+
+  function loadModel() {
+    if (Session.board) {
+      if (Session.board.id) {
+        return loadBoard(Session.board.id).then(function() {
+          return Data.typeId ? loadType(Data.typeId) : null;
+        })
+      }
+      if (Session.board.type && Session.board.type.id) {
+        return loadType(Session.board.type.id).then(function(type) {
+          Data = newBoard(type);
+        });
+      }
+    }
   }
 
   function loadImages() {
     var imageLoader = new ImageLoader();
 
-    TypeInfo.palette.values.forEach(function(pEntry) {
-      Values[pEntry.key] = pEntry;
-      if (pEntry.image) {
-        pEntry.image.obj = imageLoader.loadImage(pEntry.image.url);
-      }
-    });
+    if (TypeInfo) {
+      TypeInfo.palette.values.forEach(function(pEntry) {
+        Values[pEntry.key] = pEntry;
+        if (pEntry.image) {
+          pEntry.image.obj = imageLoader.loadImage(pEntry.image.url);
+        }
+      });
+    }
 
     return imageLoader.allLoaded();
   }
 
-  function resetBoardContents() {
-    Data.placements = TypeInfo.placements.slice(0);
-  }
-
   function init() {
 
+    if (!TypeInfo) return;
+
     var canvasModel = new BoardModel(TypeInfo.canvas.layout);
-    Data.placements.forEach(function(placement) {
-      canvasModel.setHexValue(placement.row, placement.column, placement.value);
-    });
+    if (Data.placements) {
+      Data.placements.forEach(function(placement) {
+        canvasModel.setHexValue(placement.row, placement.column, placement.value);
+      });
+    }
 
     var grid = new HexGrid(canvasModel, TypeInfo.canvas);
     var overlayComponent = withElement("overlay-canvas", function(canvas) {
@@ -184,7 +222,7 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
 
     function handleReset(e) {
       boardComponent.clear();
-      resetBoardContents();
+      Data = newBoard(TypeInfo, Data);
       renderBoardContents();
     }
 
@@ -304,11 +342,14 @@ define([ "jquery", "HexCanvasComponent", "CanvasComponent", "HttpMethod", "hexx"
   }
 
   function open() {
-    loadBoard().then(function() {
-      return loadType();
+    loadSession().then(function() {
+      return loadModel();
     }).then(function() {
       return loadImages();
-    }).then(init);
+    }).then(init)
+    .catch(function(e) {
+      console.log(e);
+    });
   }
 
   return function() {
