@@ -21,3 +21,4 @@ NEXT:
 
 BUGS:
     Cursor for palette entry stays pointer even if entry is not draggable.
+    Action icon on dragged item should be + only when hovering above a droppable hex
